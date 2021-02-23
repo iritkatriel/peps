@@ -186,7 +186,9 @@ contains only those exceptions for which the condition is true:
 
 
 Empty nested ``ExceptionGroups`` are omitted from the result, as in the
-case of ``ExceptionGroup("three")`` in the example above.  The original ``eg``
+case of ``ExceptionGroup("three")`` in the example above.  If the condition does
+not hold for any of the exceptions in the group, ``subgroup`` returns ``None``
+rather than an empty ``ExceptionGroup``.  The original ``eg``
 is unchanged by ``subgroup``, but the value returned is not necessarily a full
 new copy. Leaf exceptions are not copied, nor are ``ExceptionGroups`` which are
 fully contained in the result. When it is necessary to partition an
@@ -223,7 +225,7 @@ If both the subgroup and its complement are needed, the
 
 
 If a split is trivial (one side is empty), then None is returned for the
-other side:
+other side.
 
 .. code-block::
 
