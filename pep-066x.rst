@@ -11,25 +11,46 @@ Abstract
 ========
 
 This PEP proposes that .pyc files should use a format that allows them to be loaded into 
-memory and executed from without any decoding stage or mutation. 
-This will allow faster loading of the code objects for a module, and should speed up loading time of modules considerably.
+memory and executed without any decoding stage or mutation. 
+This will allow faster loading of the code objects for a module,
+and should speed up loading time of modules considerably.
 
-Currently, loading a code object requires an unmarshalling phase. All names and constants must be unmarshalled,
-even if they are never used.
-In particular, code that is never run or only run in case of errors will load much faster as no preparatory 
-unmarshalling phase will be required.
+Currently, loading a code object requires an unmarshalling phase.
+All names and constants must be unmarshalled, even if they are never used.
+In particular, code that is never run or only run in case of errors will load much faster with this PEP,
+as no preparatory unmarshalling phase will be required.
 
 
 Motivation
 ==========
 
-[Clearly explain why the existing language specification is inadequate to address the problem that the PEP solves.]
+Before any Python can be run, assuming it has been compiled to bytecode, it must unmarshalled from its pyc file.
+If a module is loaded repeatedly, as happens when running scripts, the cost of importing modules can become prohibitive.
 
+While much of the cost of loading a module is actually running code, the time spent to unmarshal the pyc is
+significant and largely wasted. Much code is never run, so any time spent unmarshalling it is entirely wasted.
+For code that is run, unmarshalling is just an inefficient way of creating objects that the main interpreter
+can do faster.
 
 Rationale
 =========
 
-[Describe why particular design decisions were made.]
+The design of this PEP is driven by two main observations:
+
+1. The unmarshalling code is just an interpreter to creat objects, and we already have a better one.
+2. Most of the data in a code object is fixed, and can be represented by tables that are immutable and can be shared.
+
+The data in the code object can be classified as either purely numeric (sizes, instructions, line numbers, etc.)
+or actual objects (names and constants).
+Packing the purely numeric data into a table is trivial, it the objects that need consideration.
+
+For objects that are not used, storing the data in tables is an obvious win.
+For objects that are used, they need to be created. For any object that we store as a constant,
+instead of unmarshalling that object, we can build it with the interpreter. 
+This has several advantages:
+* The interpreter is faster.
+* There is no need to jump from unmarshalling code, to the interpreter and back again.
+* Objects can be created lazily, minimizing the work done.
 
 
 Specification
@@ -73,7 +94,7 @@ instructions will be added:
 * ``MAKE_LONG`` -- Creates an integer (of arbitrary size) from binary data and adds it to the stack.
 * ``MAKE_FLOAT`` -- Creates a float from binary data
 * ``MAKE_COMPLEX`` -- Creates a complex number from the two floats on top of the stack.
-* ``MAKE_CODE_OBJECT`` -- Makes a code object.
+* ``MAKE_CODE_OBJECT`` -- Makes the code object in the same pyc file at index `oparg`.
 * ``LOAD_COMMON_CONSTANT`` -- Loads one of a fixed set of common constants, like ``None``, ``()``, ``AssertionError``, etc.
 * ``RETURN_CONSTANT`` -- Sets the nth constant to the value TOS and returns to the instruction after ``LAZY_LOAD_CONSTANT``
 
@@ -123,6 +144,13 @@ instead of ``LOAD_CONSTANT 0``, the code to create the object can be inlined::
   MAKE_STRING 0
   BUILD_TUPLE 2
 
+or in the case where ``(1, "Hi")`` is used as a constant elsewhere, but ``"Hi`` is not, the code to generate  ``(1, "Hi")`` could be::
+
+  MAKE_INT 1
+  MAKE_STRING 0
+  BUILD_TUPLE 2
+  RETURN_CONSTANT 1
+
 Version 0
 '''''''''
 
@@ -147,12 +175,12 @@ Contains::
   total_size: u4
 
 The ``meta_start`` field is the offset to the start of the metadata section,
-so it can loaded independently from the rest of the .pyc file.
+so it can loaded independently from the rest of the .pyc file if needed.
 
 Code section
 ''''''''''''
 
-``n_code`` 4 byte entries, each specifying the offset of the code object data.
+  code_offsets: u4 * n_code (offset of the code object data)
 
 Each code data contains::
 
