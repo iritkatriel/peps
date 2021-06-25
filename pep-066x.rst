@@ -42,7 +42,7 @@ The design of this PEP is driven by two main observations:
 
 The data in the code object can be classified as either purely numeric (sizes, instructions, line numbers, etc.)
 or actual objects (names and constants).
-Packing the purely numeric data into a table is trivial, it the objects that need consideration.
+Packing the purely numeric data into a table is trivial, it is the objects that need consideration.
 
 For objects that are not used, storing the data in tables is an obvious win.
 For objects that are used, they need to be created. For any object that we store as a constant,
@@ -79,10 +79,10 @@ Necessary changes to the bytecode instruction set
 
 Python bytecode requires references to constant objects, especially strings.
 These objects need to be created at runtime, so the pyc file must include instructions for creating
-these objects. Prior to this PEP that was done by unmarshalling the code object; 
+them. Prior to this PEP that was done by unmarshalling the code object; 
 the .pyc file was simply a short header followed by the marshalled form of the code object.
 
-Since the marshalling phase is no longer present, constants and strings need to created by the bytecode interpreter.
+Since the marshalling phase is no longer present, constants and strings need to be created by the bytecode interpreter.
 
 To support this, ``LOAD_CONSTANT`` will be replaced by ``LAZY_LOAD_CONSTANT`` and a number of maker
 instructions will be added:
@@ -175,7 +175,7 @@ Contains::
   total_size: u4
 
 The ``meta_start`` field is the offset to the start of the metadata section,
-so it can loaded independently from the rest of the .pyc file if needed.
+so it can be loaded independently from the rest of the .pyc file if needed.
 
 Code section
 ''''''''''''
@@ -230,7 +230,7 @@ Binary data
 '''''''''''
 
 Contains all the data required to create objects, including strings.
-In has no structure. The meaning of the bytes within this section is determined by what is indexing it.
+It has no structure. The meaning of the bytes within this section is determined by what is indexing it.
 
 Meta data
 '''''''''
@@ -271,15 +271,15 @@ Binary data
 -----------
 
 Contains all the data for metadata strings.
-In has no structure. The meaning of the bytes within this section is determined by what is indexing it.
+It has no structure. The meaning of the bytes within this section is determined by what is indexing it.
 
 Runtime objects
 '''''''''''''''
 
-The code object will need to hold a pointer to the pyc file, and and offset to the start of the
+The code object will need to hold a pointer to the pyc file, and an offset to the start of the
 data for that code object.
 
-In addition it will need areference to the shared array of constants and names::
+In addition it will need a reference to the shared array of constants and names::
 
   struct _code_object {
       PyObject_HEAD
@@ -289,7 +289,7 @@ In addition it will need areference to the shared array of constants and names::
       PyObject **names; /* == &consts_and_names->items[n_consts] */
   };
 
-For efficiency, names are constants are stored in a common array,
+For efficiency, names and constants are stored in a common array,
 so that ``const_n == names[-1-n]`` and ``name_n == names[n]``.
 
 Backwards Compatibility
