@@ -1,0 +1,1376 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 594 – Removing dead batteries from the standard library | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 594 – Removing dead batteries from the standard library</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 594 – Removing dead batteries from the standard library</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">594</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Removing dead batteries from the standard library</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Christian Heimes &lt;christian&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="https://discuss.python.org/t/pep-594-removing-dead-batteries-from-the-standard-library/1704">https://discuss.python.org/t/pep-594-removing-dead-batteries-from-the-standard-library/1704</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Draft</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">20-May-2019</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">21-May-2019</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#deprecation-schedule">Deprecation schedule</a><ul>
+<li><a class="reference internal" href="#id2">3.8</a></li>
+<li><a class="reference internal" href="#id3">3.9</a></li>
+<li><a class="reference internal" href="#id4">3.10</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pep-acceptance-process">PEP acceptance process</a></li>
+<li><a class="reference internal" href="#deprecated-modules">Deprecated modules</a><ul>
+<li><a class="reference internal" href="#data-encoding-modules">Data encoding modules</a><ul>
+<li><a class="reference internal" href="#binhex">binhex</a></li>
+<li><a class="reference internal" href="#uu-and-the-uu-encoding">uu and the uu encoding</a></li>
+<li><a class="reference internal" href="#xdrlib">xdrlib</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#multimedia-modules">Multimedia modules</a><ul>
+<li><a class="reference internal" href="#aifc">aifc</a></li>
+<li><a class="reference internal" href="#audioop">audioop</a></li>
+<li><a class="reference internal" href="#chunk">chunk</a></li>
+<li><a class="reference internal" href="#imghdr">imghdr</a></li>
+<li><a class="reference internal" href="#ossaudiodev">ossaudiodev</a></li>
+<li><a class="reference internal" href="#sndhdr">sndhdr</a></li>
+<li><a class="reference internal" href="#sunau">sunau</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#networking-modules">Networking modules</a><ul>
+<li><a class="reference internal" href="#asynchat">asynchat</a></li>
+<li><a class="reference internal" href="#asyncore">asyncore</a></li>
+<li><a class="reference internal" href="#cgi">cgi</a></li>
+<li><a class="reference internal" href="#cgitb">cgitb</a></li>
+<li><a class="reference internal" href="#smtpd">smtpd</a></li>
+<li><a class="reference internal" href="#nntplib">nntplib</a></li>
+<li><a class="reference internal" href="#telnetlib">telnetlib</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#operating-system-interface">Operating system interface</a><ul>
+<li><a class="reference internal" href="#crypt">crypt</a></li>
+<li><a class="reference internal" href="#macpath">macpath</a></li>
+<li><a class="reference internal" href="#nis">nis</a></li>
+<li><a class="reference internal" href="#spwd">spwd</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#misc-modules">Misc modules</a><ul>
+<li><a class="reference internal" href="#formatter">formatter</a></li>
+<li><a class="reference internal" href="#imp">imp</a></li>
+<li><a class="reference internal" href="#msilib">msilib</a></li>
+<li><a class="reference internal" href="#parser">parser</a></li>
+<li><a class="reference internal" href="#pipes">pipes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#removed-modules">Removed modules</a><ul>
+<li><a class="reference internal" href="#fpectl">fpectl</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules-to-keep">Modules to keep</a><ul>
+<li><a class="reference internal" href="#colorsys">colorsys</a></li>
+<li><a class="reference internal" href="#fileinput">fileinput</a></li>
+<li><a class="reference internal" href="#lib2to3">lib2to3</a></li>
+<li><a class="reference internal" href="#getopt">getopt</a></li>
+<li><a class="reference internal" href="#optparse">optparse</a></li>
+<li><a class="reference internal" href="#wave">wave</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#future-maintenance-of-removed-modules">Future maintenance of removed modules</a></li>
+<li><a class="reference internal" href="#discussions">Discussions</a></li>
+<li><a class="reference internal" href="#update-history">Update history</a><ul>
+<li><a class="reference internal" href="#update-1">Update 1</a></li>
+<li><a class="reference internal" href="#update-2">Update 2</a></li>
+<li><a class="reference internal" href="#update-3">Update 3</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>This PEP proposed a list of standard library modules to be removed from the
+standard library. The modules are mostly historic data formats (e.g. Commodore
+and SUN file formats), APIs and operating systems that have been superseded a
+long time ago (e.g. Mac OS 9), or modules that have security implications and
+better alternatives (e.g. password and login).</p>
+<p>The PEP follows in the foot steps of other PEPS like <span class="target" id="index-0"></span><a class="pep reference external" href="../pep-3108"><strong>PEP 3108</strong></a>. The
+<em>Standard Library Reorganization</em> proposal removed a bunch of modules from
+Python 3.0. In 2007, the PEP referred to maintenance burden as:</p>
+<blockquote>
+<div>“Over the years, certain modules have become a heavy burden upon python-dev
+to maintain. In situations like this, it is better for the module to be
+given to the community to maintain to free python-dev to focus more on
+language support and other modules in the standard library that do not take
+up an undue amount of time and effort.”</div></blockquote>
+<p>The withdrawn <span class="target" id="index-1"></span><a class="pep reference external" href="../pep-0206"><strong>PEP 206</strong></a> from 2000 expresses issues with the Python standard
+library unvarnished and fortright:</p>
+<blockquote>
+<div>“[…] the standard library modules aren’t always the best choices for a
+job. Some library modules were quick hacks (e.g. <code class="docutils literal notranslate"><span class="pre">calendar</span></code>,
+<code class="docutils literal notranslate"><span class="pre">commands</span></code>), some were designed poorly and are now near-impossible to
+fix (<code class="docutils literal notranslate"><span class="pre">cgi</span></code>), and some have been rendered obsolete by other, more complete
+modules […].”</div></blockquote>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>Back in the early days of Python, the interpreter came with a large set of
+useful modules. This was often referred to as “batteries included”
+philosophy and was one of the cornerstones to Python’s success story.
+Users didn’t have to figure out how to download and install separate
+packages in order to write a simple web server or parse email.</p>
+<p>Times have changed. The introduction of the cheese shop (PyPI), setuptools,
+and later pip, it became simple and straightforward to download and install
+packages. Nowadays Python has a rich and vibrant ecosystem of third-party
+packages. It’s pretty much standard to either install packages from PyPI or
+use one of the many Python or Linux distributions.</p>
+<p>On the other hand, Python’s standard library is piling up cruft, unnecessary
+duplication of functionality, and dispensable features. This is undesirable
+for several reasons.</p>
+<ul class="simple">
+<li>Any additional module increases the maintenance cost for the Python core
+development team. The team has limited resources, reduced maintenance cost
+frees development time for other improvements.</li>
+<li>Modules in the standard library are generally favored and seen as the
+de facto solution for a problem. A majority of users only pick third-party
+modules to replace a stdlib module, when they have a compelling reason, e.g.
+<code class="docutils literal notranslate"><span class="pre">lxml</span></code> instead of <code class="docutils literal notranslate"><span class="pre">xml</span></code>. The removal of an unmaintained stdlib module
+increases the chances of a community-contributed module to become widely
+used.</li>
+<li>A lean and mean standard library benefits platforms with limited resources
+like devices with just a few hundred kilobyte of storage (e.g. BBC
+Micro:bit). Python on mobile platforms like BeeWare or WebAssembly
+(e.g. pyodide) also benefit from reduced download size.</li>
+</ul>
+<p>The modules in the PEP have been selected for deprecation because their
+removal is either least controversial or most beneficial. For example,
+least controversial are 30-year-old multimedia formats like the <code class="docutils literal notranslate"><span class="pre">sunau</span></code>
+audio format, which was used on SPARC and NeXT workstations in the late
+1980s. The <code class="docutils literal notranslate"><span class="pre">crypt</span></code> module has fundamental flaws that are better solved
+outside the standard library.</p>
+<p>This PEP also designates some modules as not scheduled for removal. Some
+modules have been deprecated for several releases or seem unnecessary at
+first glance. However it is beneficial to keep the modules in the standard
+library, mostly for environments where installing a package from PyPI is not
+an option. This can be corporate environments or classrooms where external
+code is not permitted without legal approval.</p>
+<ul class="simple">
+<li>The usage of FTP is declining, but some files are still provided over
+the FTP protocol or hosters offer FTP to upload content. Therefore,
+<code class="docutils literal notranslate"><span class="pre">ftplib</span></code> is going to stay.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">optparse</span></code> and <code class="docutils literal notranslate"><span class="pre">getopt</span></code> modules are widely used. They are mature
+modules with very low maintenance overhead.</li>
+<li>According to David Beazley <a class="footnote-reference brackets" href="#id61" id="id1">5</a> the <code class="docutils literal notranslate"><span class="pre">wave</span></code> module is easy to teach to
+kids and can make crazy sounds. Making a computer generate crazy sounds is
+powerful and highly motivating exercise for a nine-year-old aspiring developer.
+It’s a fun battery to keep.</li>
+</ul>
+</section>
+<section id="deprecation-schedule">
+<h2><a class="toc-backref" href="#deprecation-schedule">Deprecation schedule</a></h2>
+<section id="id2">
+<h3><a class="toc-backref" href="#id2">3.8</a></h3>
+<p>This PEP targets Python 3.8. Version 3.8.0 final is scheduled to be released
+a few months before Python 2.7 will reach its end of lifetime. We expect that
+Python 3.8 will be targeted by users that migrate to Python 3 in 2019 and
+2020. To reduce churn and to allow a smooth transition from Python 2,
+Python 3.8 will neither raise <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> nor remove any
+modules that have been scheduled for removal. Instead deprecated modules will
+just be <em>documented</em> as deprecated. Optionally modules may emit a
+<code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code>.</p>
+<p>All deprecated modules will also undergo a feature freeze. No additional
+features should be added <em>unless</em> python-dev agrees that the deprecation of
+the module is reverted and the code will not be removed. Bug should still be
+fixed.</p>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id3">3.9</a></h3>
+<p>Starting with Python 3.9, deprecated modules will start issuing
+<code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code>. The <a class="reference external" href="https://docs.python.org/3/library/parser.html">parser</a> <a class="footnote-reference brackets" href="#id142" id="id143">38</a> module is removed and potentially
+replaced with a new module.</p>
+<p>All other deprecated modules are fully supported and will receive security
+updates until Python 3.9 reaches its end-of-life. Python 3.9.0 will
+be released about 18 months after 3.8.0 (April 2021?) and most likely
+be supported for five years after the release. The estimated EOL of Python 3.9
+is in 2026.</p>
+</section>
+<section id="id4">
+<h3><a class="toc-backref" href="#id4">3.10</a></h3>
+<p>In 3.10 all deprecated modules will be removed from the CPython repository
+together with tests, documentation, and autoconf rules.</p>
+</section>
+</section>
+<section id="pep-acceptance-process">
+<h2><a class="toc-backref" href="#pep-acceptance-process">PEP acceptance process</a></h2>
+<p>3.8.0b1 is scheduled to be release shortly after the PEP is officially
+submitted. Since it’s improbable that the PEP will pass all stages of the
+PEP process in time, I propose a two-step acceptance process that is
+analogous to Python’s two-release deprecation process.</p>
+<p>The first <em>provisionally-accepted</em> phase targets Python 3.8.0b1. In the first
+phase no code is changed or removed. Modules are only documented as
+deprecated. The only exception is the <a class="reference external" href="https://docs.python.org/3/library/parser.html">parser</a> <a class="footnote-reference brackets" href="#id142" id="id144">38</a> module. It has been
+documented as deprecated since Python 2.5 and is scheduled for removal for
+3.9 to make place for a more advanced parser.</p>
+<p>The final decision, which modules will be removed and how the removed code
+is preserved, can be delayed for another year.</p>
+</section>
+<section id="deprecated-modules">
+<h2><a class="toc-backref" href="#deprecated-modules">Deprecated modules</a></h2>
+<p>The modules are grouped as data encoding, multimedia, network, OS interface,
+and misc modules. The majority of modules are for old data formats or
+old APIs. Some others are rarely useful and have better replacements on
+PyPI, e.g. Pillow for image processing or NumPy-based projects to deal with
+audio processing.</p>
+<table class="colwidths-given docutils align-default" id="id65">
+<caption><span class="caption-text">Table 1: Proposed modules deprecations</span></caption>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Module</th>
+<th class="head">Deprecated in</th>
+<th class="head">To be removed</th>
+<th class="head">Added in</th>
+<th class="head">Has maintainer?</th>
+<th class="head">Replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>aifc</td>
+<td>3.8 (3.0*)</td>
+<td>3.10</td>
+<td>1993</td>
+<td><strong>yes (inactive)</strong></td>
+<td>-</td>
+</tr>
+<tr class="row-odd"><td>asynchat</td>
+<td><strong>3.6</strong> (3.0*)</td>
+<td>3.10</td>
+<td>1999</td>
+<td><strong>yes</strong></td>
+<td><a class="reference external" href="https://docs.python.org/3/library/hashlib.html">asyncio</a> <a class="footnote-reference brackets" href="#id75" id="id76">13</a></td>
+</tr>
+<tr class="row-even"><td>asyncore</td>
+<td><strong>3.6</strong> (3.0*)</td>
+<td>3.10</td>
+<td>1999</td>
+<td><strong>yes</strong></td>
+<td><a class="reference external" href="https://docs.python.org/3/library/hashlib.html">asyncio</a> <a class="footnote-reference brackets" href="#id75" id="id77">13</a></td>
+</tr>
+<tr class="row-odd"><td>audioop</td>
+<td>3.8 (3.0*)</td>
+<td>3.10</td>
+<td>1992</td>
+<td><strong>yes</strong></td>
+<td>-</td>
+</tr>
+<tr class="row-even"><td>binhex</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>1995</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-odd"><td>cgi</td>
+<td>3.8 (2.0**)</td>
+<td>3.10</td>
+<td>1995</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-even"><td>cgitb</td>
+<td>3.8 (2.0**)</td>
+<td>3.10</td>
+<td>1995</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-odd"><td>chunk</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>1999</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-even"><td>crypt</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>1994</td>
+<td><strong>yes (inactive)</strong></td>
+<td><a class="reference external" href="https://pypi.org/project/legacycrypt/">legacycrypt</a> <a class="footnote-reference brackets" href="#id89" id="id90">18</a>, <a class="reference external" href="https://pypi.org/project/bcrypt/">bcrypt</a> <a class="footnote-reference brackets" href="#id78" id="id79">14</a>, <a class="reference external" href="https://pypi.org/project/argon2-cffi/">argon2cffi</a> <a class="footnote-reference brackets" href="#id69" id="id70">10</a>, <a class="reference external" href="https://docs.python.org/3/library/hashlib.html">hashlib</a> <a class="footnote-reference brackets" href="#id75" id="id86">13</a>, <a class="reference external" href="https://pypi.org/project/passlib/">passlib</a> <a class="footnote-reference brackets" href="#id92" id="id93">19</a></td>
+</tr>
+<tr class="row-odd"><td>formatter</td>
+<td><strong>3.4</strong></td>
+<td>3.10</td>
+<td>1995</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-even"><td>fpectl</td>
+<td><strong>3.7</strong></td>
+<td><strong>3.7</strong></td>
+<td>1997</td>
+<td>n/a</td>
+<td>-</td>
+</tr>
+<tr class="row-odd"><td>imghdr</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>1992</td>
+<td>no</td>
+<td><a class="reference external" href="https://pypi.org/project/filetype/">filetype</a> <a class="footnote-reference brackets" href="#id83" id="id84">16</a>, <a class="reference external" href="https://pypi.org/project/puremagic/">puremagic</a> <a class="footnote-reference brackets" href="#id94" id="id95">20</a>, <a class="reference external" href="https://pypi.org/project/python-magic/">python-magic</a> <a class="footnote-reference brackets" href="#id97" id="id98">21</a></td>
+</tr>
+<tr class="row-even"><td>imp</td>
+<td><strong>3.4</strong></td>
+<td>3.10</td>
+<td>1990/1995</td>
+<td>no</td>
+<td><a class="reference external" href="https://docs.python.org/3/library/importlib.html">importlib</a> <a class="footnote-reference brackets" href="#id87" id="id88">17</a></td>
+</tr>
+<tr class="row-odd"><td>macpath</td>
+<td><strong>3.7</strong></td>
+<td><strong>3.8</strong></td>
+<td>1990</td>
+<td>n/a</td>
+<td>-</td>
+</tr>
+<tr class="row-even"><td>msilib</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>2006</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-odd"><td>nntplib</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>1992</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-even"><td>nis</td>
+<td>3.8 (3.0*)</td>
+<td>3.10</td>
+<td>1992</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-odd"><td>ossaudiodev</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>2002</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-even"><td>parser</td>
+<td><strong>2.5</strong></td>
+<td><strong>3.9</strong></td>
+<td>1993</td>
+<td><strong>yes</strong></td>
+<td><a class="reference external" href="https://docs.python.org/3/library/ast.html">ast</a> <a class="footnote-reference brackets" href="#id71" id="id72">11</a>, <a class="reference external" href="https://pypi.org/project/astroid/">astroid</a> <a class="footnote-reference brackets" href="#id73" id="id74">12</a>, lib2to3.pgen2</td>
+</tr>
+<tr class="row-odd"><td>pipes</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>1992</td>
+<td>no</td>
+<td><a class="reference external" href="https://docs.python.org/3/library/subprocess.html">subprocess</a> <a class="footnote-reference brackets" href="#id104" id="id105">24</a></td>
+</tr>
+<tr class="row-even"><td>smtpd</td>
+<td><strong>3.4.7</strong>, <strong>3.5.4</strong></td>
+<td>3.10</td>
+<td>2001</td>
+<td><strong>yes</strong></td>
+<td><a class="reference external" href="https://pypi.org/project/aiosmtpd/">aiosmtpd</a> <a class="footnote-reference brackets" href="#id67" id="id68">9</a></td>
+</tr>
+<tr class="row-odd"><td>sndhdr</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>1994</td>
+<td>no</td>
+<td><a class="reference external" href="https://pypi.org/project/filetype/">filetype</a> <a class="footnote-reference brackets" href="#id83" id="id85">16</a>, <a class="reference external" href="https://pypi.org/project/puremagic/">puremagic</a> <a class="footnote-reference brackets" href="#id94" id="id96">20</a>, <a class="reference external" href="https://pypi.org/project/python-magic/">python-magic</a> <a class="footnote-reference brackets" href="#id97" id="id99">21</a></td>
+</tr>
+<tr class="row-even"><td>spwd</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>2005</td>
+<td>no</td>
+<td><a class="reference external" href="https://pypi.org/project/python-pam/">python-pam</a> <a class="footnote-reference brackets" href="#id100" id="id101">22</a>, <a class="reference external" href="https://pypi.org/project/simplepam/">simplepam</a> <a class="footnote-reference brackets" href="#id102" id="id103">23</a></td>
+</tr>
+<tr class="row-odd"><td>sunau</td>
+<td>3.8 (3.0*)</td>
+<td>3.10</td>
+<td>1993</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-even"><td>telnetlib</td>
+<td>3.8 (3.0*)</td>
+<td>3.10</td>
+<td>1997</td>
+<td>no</td>
+<td><a class="reference external" href="https://pypi.org/project/telnetlib3/">telnetlib3</a> <a class="footnote-reference brackets" href="#id106" id="id107">25</a>, <a class="reference external" href="https://pypi.org/project/Exscript/">Exscript</a> <a class="footnote-reference brackets" href="#id80" id="id81">15</a></td>
+</tr>
+<tr class="row-odd"><td>uu</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>1994</td>
+<td>no</td>
+<td>-</td>
+</tr>
+<tr class="row-even"><td>xdrlib</td>
+<td>3.8</td>
+<td>3.10</td>
+<td>1992/1996</td>
+<td>no</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<p>Some module deprecations proposed by <span class="target" id="index-2"></span><a class="pep reference external" href="../pep-3108"><strong>PEP 3108</strong></a> for 3.0 and <span class="target" id="index-3"></span><a class="pep reference external" href="../pep-0206"><strong>PEP 206</strong></a> for
+2.0. The <em>added in</em> column illustrates, when a module was originally designed
+and added to the standard library. The <em>has maintainer</em> column refers to the
+<a class="reference external" href="https://devguide.python.org/experts/">expert index</a>, a list of domain
+experts and maintainers in the DevGuide.</p>
+<section id="data-encoding-modules">
+<h3><a class="toc-backref" href="#data-encoding-modules">Data encoding modules</a></h3>
+<section id="binhex">
+<h4><a class="toc-backref" href="#binhex">binhex</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/binhex.html">binhex</a> module encodes
+and decodes Apple Macintosh binhex4 data. It was originally developed for
+TRS-80. In the 1980s and early 1990s it was used on classic Mac OS 9 to
+encode binary email attachments.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="uu-and-the-uu-encoding">
+<h4><a class="toc-backref" href="#uu-and-the-uu-encoding">uu and the uu encoding</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/uu.html">uu</a> module provides
+uuencode format, an old binary encoding format for email from 1980. The uu
+format has been replaced by MIME. The uu codec is provided by the <code class="docutils literal notranslate"><span class="pre">binascii</span></code>
+module.  There’s also <code class="docutils literal notranslate"><span class="pre">encodings/uu_codec.py</span></code> which is a codec for the
+same encoding; it should also be deprecated.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="xdrlib">
+<h4><a class="toc-backref" href="#xdrlib">xdrlib</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/xdrlib.html">xdrlib</a> module supports
+the Sun External Data Representation Standard. XDR is an old binary
+serialization format from 1987. These days it’s rarely used outside
+specialized domains like NFS.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+</section>
+<section id="multimedia-modules">
+<h3><a class="toc-backref" href="#multimedia-modules">Multimedia modules</a></h3>
+<section id="aifc">
+<h4><a class="toc-backref" href="#aifc">aifc</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/aifc.html">aifc</a> module provides
+support for reading and writing AIFF and AIFF-C files. The Audio Interchange
+File Format is an old audio format from 1988 based on Amiga IFF. It was most
+commonly used on the Apple Macintosh. These days only few specialized
+application use AIFF.</p>
+<p>A user disclosed <a class="footnote-reference brackets" href="#id64" id="id8">8</a> that the post production film industry makes heavy
+use of the AIFC file format. The usage of the <code class="docutils literal notranslate"><span class="pre">aifc</span></code> module in closed source
+and internal software was unknown prior to the first posting of this PEP. This
+may be a compelling argument to keep the <code class="docutils literal notranslate"><span class="pre">aifc</span></code> module in the standard
+library. The file format is stable and the module does not require much
+maintenance. The strategic benefits for Python may outmatch the burden.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python (depends on some functions from <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id112">27</a> C extension)</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>yes, but expert is currently inactive.</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="audioop">
+<h4><a class="toc-backref" href="#audioop">audioop</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> module
+contains helper functions to manipulate raw audio data and adaptive
+differential pulse-code modulated audio data. The module is implemented in
+C without any additional dependencies. The <a class="reference external" href="https://docs.python.org/3/library/aifc.html">aifc</a> <a class="footnote-reference brackets" href="#id109" id="id110">26</a>, <a class="reference external" href="https://docs.python.org/3/library/sunhdr.html">sunau</a> <a class="footnote-reference brackets" href="#id125" id="id126">30</a>, and <a class="reference external" href="https://docs.python.org/3/library/wave.html">wave</a> <a class="footnote-reference brackets" href="#id151" id="id152">41</a>
+modules depend on <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id113">27</a> for some operations.</p>
+<p>The byteswap operation in the <code class="docutils literal notranslate"><span class="pre">wave</span></code> module can be substituted with little
+extra work. In case <code class="docutils literal notranslate"><span class="pre">aifc</span></code> is not deprecated as well, a reduced version of
+the <code class="docutils literal notranslate"><span class="pre">audioop</span></code> module is converted into a private implementation detail,
+e.g. <code class="docutils literal notranslate"><span class="pre">_audioop</span></code> with <code class="docutils literal notranslate"><span class="pre">byteswap</span></code>, <code class="docutils literal notranslate"><span class="pre">alaw2lin</span></code>, <code class="docutils literal notranslate"><span class="pre">ulaw2lin</span></code>, <code class="docutils literal notranslate"><span class="pre">lin2alaw</span></code>,
+<code class="docutils literal notranslate"><span class="pre">lin2ulaw</span></code>, and <code class="docutils literal notranslate"><span class="pre">lin2adpcm</span></code>.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>C extension</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>yes</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="chunk">
+<h4><a class="toc-backref" href="#chunk">chunk</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/chunk.html">chunk</a> module provides
+support for reading and writing Electronic Arts’ Interchange File Format.
+IFF is an old audio file format originally introduced for Commodore and
+Amiga. The format is no longer relevant.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="imghdr">
+<h4><a class="toc-backref" href="#imghdr">imghdr</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/imghdr.html">imghdr</a> module is a
+simple tool to guess the image file format from the first 32 bytes
+of a file or buffer. It supports only a limited number of formats and
+neither returns resolution nor color depth.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><a class="reference external" href="https://pypi.org/project/puremagic/">puremagic</a>,
+<a class="reference external" href="https://pypi.org/project/filetype/">filetype</a>,
+<a class="reference external" href="https://pypi.org/project/python-magic/">python-magic</a></dd>
+</dl>
+</section>
+<section id="ossaudiodev">
+<h4><a class="toc-backref" href="#ossaudiodev">ossaudiodev</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/ossaudiodev.html">ossaudiodev</a>
+module provides support for Open Sound System, an interface to sound
+playback and capture devices. OSS was initially free software, but later
+support for newer sound devices and improvements were proprietary. Linux
+community abandoned OSS in favor of ALSA <a class="footnote-reference brackets" href="#id57" id="id16">1</a>. Some operation systems like
+OpenBSD and NetBSD provide an incomplete <a class="footnote-reference brackets" href="#id58" id="id17">2</a> emulation of OSS.</p>
+<p>To best of my knowledge, FreeBSD is the only widespread operating system
+that uses Open Sound System as of today. The <code class="docutils literal notranslate"><span class="pre">ossaudiodev</span></code> hasn’t seen any
+improvements or new features since 2003. All commits since 2003 are
+project-wide code cleanups and a couple of bug fixes. It would be beneficial
+for both FreeBSD community and core development, if the module would be
+maintained and distributed by people that care for it and use it.</p>
+<p>The standard library used to have more audio-related modules. The other
+audio device interface (<code class="docutils literal notranslate"><span class="pre">audiodev</span></code>, <code class="docutils literal notranslate"><span class="pre">linuxaudiodev</span></code>, <code class="docutils literal notranslate"><span class="pre">sunaudiodev</span></code>)
+were removed in 2007 as part of the <span class="target" id="index-4"></span><a class="pep reference external" href="../pep-3108"><strong>PEP 3108</strong></a> stdlib re-organization.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>C extension</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="sndhdr">
+<h4><a class="toc-backref" href="#sndhdr">sndhdr</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/sndhdr.html">sndhdr</a> module is
+similar to the <a class="reference external" href="https://docs.python.org/3/library/imghdr.html">imghdr</a> <a class="footnote-reference brackets" href="#id120" id="id121">28</a> module but for audio formats. It guesses file
+format, channels, frame rate, and sample widths from the first 512 bytes of
+a file or buffer. The module only supports AU, AIFF, HCOM, VOC, WAV, and
+other ancient formats.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python (depends on <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id114">27</a> C extension for some operations)</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><a class="reference external" href="https://pypi.org/project/puremagic/">puremagic</a>,
+<a class="reference external" href="https://pypi.org/project/filetype/">filetype</a>,
+<a class="reference external" href="https://pypi.org/project/python-magic/">python-magic</a></dd>
+</dl>
+</section>
+<section id="sunau">
+<h4><a class="toc-backref" href="#sunau">sunau</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/sunhdr.html">sunau</a> module provides
+support for Sun AU sound format. It’s yet another old, obsolete file format.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python (depends on <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id115">27</a> C extension for some operations)</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+</section>
+<section id="networking-modules">
+<h3><a class="toc-backref" href="#networking-modules">Networking modules</a></h3>
+<section id="asynchat">
+<h4><a class="toc-backref" href="#asynchat">asynchat</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/asynchat.html">asynchat</a> module
+is built on top of <a class="reference external" href="https://docs.python.org/3/library/asyncore.html">asyncore</a> <a class="footnote-reference brackets" href="#id127" id="id128">31</a> and has been deprecated since Python 3.6.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.6</dd>
+<dt>Removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>yes</dd>
+<dt>Substitute</dt><dd>asyncio</dd>
+</dl>
+</section>
+<section id="asyncore">
+<h4><a class="toc-backref" href="#asyncore">asyncore</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/asyncore.html">asyncore</a> module was
+the first module for asynchronous socket service clients and servers. It
+has been replaced by asyncio and is deprecated since Python 3.6.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">asyncore</span></code> module is also used in stdlib tests. The tests for
+<code class="docutils literal notranslate"><span class="pre">ftplib</span></code>, <code class="docutils literal notranslate"><span class="pre">logging</span></code>, <code class="docutils literal notranslate"><span class="pre">smptd</span></code>, <code class="docutils literal notranslate"><span class="pre">smtplib</span></code>, and <code class="docutils literal notranslate"><span class="pre">ssl</span></code> are partly
+based on <code class="docutils literal notranslate"><span class="pre">asyncore</span></code>. These tests must be updated to use asyncio or
+threading.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.6</dd>
+<dt>Removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>yes</dd>
+<dt>Substitute</dt><dd>asyncio</dd>
+</dl>
+</section>
+<section id="cgi">
+<h4><a class="toc-backref" href="#cgi">cgi</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/cgi.html">cgi</a> module is a support
+module for Common Gateway Interface (CGI) scripts. CGI is deemed as
+inefficient because every incoming request is handled in a new process.
+<span class="target" id="index-5"></span><a class="pep reference external" href="../pep-0206"><strong>PEP 206</strong></a> considers the module as:</p>
+<blockquote>
+<div>“[…] designed poorly and are now near-impossible to fix (<code class="docutils literal notranslate"><span class="pre">cgi</span></code>) […]”</div></blockquote>
+<p>Several people proposed to either keep the <code class="docutils literal notranslate"><span class="pre">cgi</span></code> module for features like
+<code class="docutils literal notranslate"><span class="pre">cgi.parse_qs</span></code> or move <code class="docutils literal notranslate"><span class="pre">cgi.escape</span></code> to a different module. The
+functions <code class="docutils literal notranslate"><span class="pre">cgi.parse_qs</span></code> and <code class="docutils literal notranslate"><span class="pre">cgi.parse_qsl</span></code> have been
+deprecated for a while and are actually aliases for
+<code class="docutils literal notranslate"><span class="pre">urllib.parse.parse_qs</span></code> and <code class="docutils literal notranslate"><span class="pre">urllib.parse.parse_qsl</span></code>. The
+function <code class="docutils literal notranslate"><span class="pre">cgi.quote</span></code> has been deprecated in favor of <code class="docutils literal notranslate"><span class="pre">html.quote</span></code>
+with secure default values.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8 (originally proposed for 2.0 by <span class="target" id="index-6"></span><a class="pep reference external" href="../pep-0206"><strong>PEP 206</strong></a>)</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="cgitb">
+<h4><a class="toc-backref" href="#cgitb">cgitb</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/cgitb.html">cgitb</a> module is a
+helper for the <code class="docutils literal notranslate"><span class="pre">cgi</span></code> module for configurable tracebacks.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">cgitb</span></code> module is not used by any major Python web framework (Django,
+Pyramid, Plone, Flask, CherryPy, or Bottle). Only Paste uses it in an
+optional debugging middleware.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8 (originally proposed for 2.0 by <span class="target" id="index-7"></span><a class="pep reference external" href="../pep-0206"><strong>PEP 206</strong></a>)</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="smtpd">
+<h4><a class="toc-backref" href="#smtpd">smtpd</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/smtpd.html">smtpd</a> module provides
+a simple implementation of a SMTP mail server. The module documentation
+marks the module as deprecated and recommends <code class="docutils literal notranslate"><span class="pre">aiosmtpd</span></code> instead. The
+deprecation message was added in releases 3.4.7, 3.5.4, and 3.6.1.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd><strong>3.4.7</strong>, <strong>3.5.4</strong>, <strong>3.6.1</strong></dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>yes</dd>
+<dt>Substitute</dt><dd>aiosmtpd</dd>
+</dl>
+</section>
+<section id="nntplib">
+<h4><a class="toc-backref" href="#nntplib">nntplib</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/nntplib.html">nntplib</a> module
+implements the client side of the Network News Transfer Protocol (nntp). News
+groups used to be a dominant platform for online discussions. Over the last
+two decades, news has been slowly but steadily replaced with mailing lists
+and web-based discussion platforms. Twisted is also
+<a class="reference external" href="https://twistedmatrix.com/trac/ticket/9405">planning</a> to deprecate NNTP
+support and <a class="reference external" href="https://github.com/greenbender/pynntp">pynntp</a> hasn’t seen any
+activity since 2014. This is a good indicator that the public interest in
+NNTP support is declining.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">nntplib</span></code> tests have been the cause of additional work in the recent
+past. Python only contains client side of NNTP. The tests connect to
+external news server. The servers are sometimes unavailable, too slow, or do
+not work correctly over IPv6. The situation causes flaky test runs on
+buildbots.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="telnetlib">
+<h4><a class="toc-backref" href="#telnetlib">telnetlib</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/telnetlib.html">telnetlib</a> module
+provides a Telnet class that implements the Telnet protocol.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Substitute</dt><dd><a class="reference external" href="https://pypi.org/project/telnetlib3/">telnetlib3</a> <a class="footnote-reference brackets" href="#id106" id="id108">25</a>,
+<a class="reference external" href="https://pypi.org/project/Exscript/">Exscript</a> <a class="footnote-reference brackets" href="#id80" id="id82">15</a></dd>
+</dl>
+</section>
+</section>
+<section id="operating-system-interface">
+<h3><a class="toc-backref" href="#operating-system-interface">Operating system interface</a></h3>
+<section id="crypt">
+<h4><a class="toc-backref" href="#crypt">crypt</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/crypt.html">crypt</a> module implements
+password hashing based on the <code class="docutils literal notranslate"><span class="pre">crypt(3)</span></code> function from <code class="docutils literal notranslate"><span class="pre">libcrypt</span></code> or
+<code class="docutils literal notranslate"><span class="pre">libxcrypt</span></code> on Unix-like platforms. The algorithms are mostly old, of poor
+quality and insecure. Users are discouraged to use them.</p>
+<ul class="simple">
+<li>The module is not available on Windows. Cross-platform applications need
+an alternative implementation anyway.</li>
+<li>Only DES encryption is guaranteed to be available. DES has an extremely
+limited key space of 2**56.</li>
+<li>MD5, salted SHA256, salted SHA512, and Blowfish are optional extensions.
+SSHA256 and SSHA512 are glibc extensions. Blowfish (bcrypt) is the only
+algorithm that is still secure. However it’s in glibc and therefore not
+commonly available on Linux.</li>
+<li>Depending on the platform, the <code class="docutils literal notranslate"><span class="pre">crypt</span></code> module is not thread safe. Only
+implementations with <code class="docutils literal notranslate"><span class="pre">crypt_r(3)</span></code> are thread safe.</li>
+<li>The module was never useful to interact with system user and password
+databases. On BSD, macOS, and Linux, all user authentication and
+password modification operations must go through PAM (pluggable
+authentication module), see <a class="reference external" href="https://docs.python.org/3/library/spwd.html">spwd</a> <a class="footnote-reference brackets" href="#id140" id="id141">37</a> deprecation.</li>
+</ul>
+<dl class="simple">
+<dt>Module type</dt><dd>C extension + Python module</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>yes, but expert is currently inactive.</dd>
+<dt>Substitute</dt><dd><a class="reference external" href="https://pypi.org/project/legacycrypt/">legacycrypt</a> (ctypes wrapper),
+<a class="reference external" href="https://pypi.org/project/bcrypt/">bcrypt</a>,
+<a class="reference external" href="https://pypi.org/project/passlib/">passlib</a>,
+<a class="reference external" href="https://pypi.org/project/argon2-cffi/">argon2cffi</a>,
+hashlib module (PBKDF2, scrypt)</dd>
+</dl>
+</section>
+<section id="macpath">
+<h4><a class="toc-backref" href="#macpath">macpath</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/macpath.html">macpath</a> module
+provides Mac OS 9 implementation of <code class="docutils literal notranslate"><span class="pre">os.path</span></code> routines. Mac OS 9 is no longer
+supported.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.7</dd>
+<dt>Removed in</dt><dd>3.8</dd>
+<dt>Has a designated expert</dt><dd>n/a</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="nis">
+<h4><a class="toc-backref" href="#nis">nis</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/nis.html">nis</a> module provides
+NIS/YP support. Network Information Service / Yellow Pages is an old and
+deprecated directory service protocol developed by Sun Microsystems. It’s
+designed successor NIS+ from 1992 never took off. For a long time, libc’s
+Name Service Switch, LDAP, and Kerberos/GSSAPI are considered a more powerful
+and more secure replacement of NIS.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>C extension</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="spwd">
+<h4><a class="toc-backref" href="#spwd">spwd</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/spwd.html">spwd</a> module provides
+direct access to Unix shadow password database using non-standard APIs.</p>
+<p>In general it’s a bad idea to use spwd. It circumvents system
+security policies, does not use the PAM stack, and is only compatible
+with local user accounts, because it ignores NSS. The use of the <code class="docutils literal notranslate"><span class="pre">spwd</span></code>
+module for access control must be considered a <em>security bug</em>, as it bypasses
+PAM’s access control.</p>
+<p>Further more the <code class="docutils literal notranslate"><span class="pre">spwd</span></code> module uses the
+<a class="reference external" href="http://man7.org/linux/man-pages/man3/shadow.3.html">shadow(3)</a> APIs.
+Functions like <code class="docutils literal notranslate"><span class="pre">getspnam(3)</span></code> access the <code class="docutils literal notranslate"><span class="pre">/etc/shadow</span></code> file directly. This
+is dangerous and even forbidden for confined services on systems with a
+security engine like SELinux or AppArmor.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>C extension</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><a class="reference external" href="https://pypi.org/project/python-pam/">python-pam</a>,
+<a class="reference external" href="https://pypi.org/project/simplepam/">simpleplam</a></dd>
+</dl>
+</section>
+</section>
+<section id="misc-modules">
+<h3><a class="toc-backref" href="#misc-modules">Misc modules</a></h3>
+<section id="formatter">
+<h4><a class="toc-backref" href="#formatter">formatter</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/formatter.html">formatter</a> module
+is an old text formatting module which has been deprecated since Python 3.4.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.4</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><em>n/a</em></dd>
+</dl>
+</section>
+<section id="imp">
+<h4><a class="toc-backref" href="#imp">imp</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/imp.html">imp</a> module is the
+predecessor of the
+<a class="reference external" href="https://docs.python.org/3/library/importlib.html">importlib</a> module. Most
+functions have been deprecated since Python 3.3 and the module since
+Python 3.4.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>C extension</dd>
+<dt>Deprecated in</dt><dd>3.4</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>yes, experts have deprecated the module</dd>
+<dt>Substitute</dt><dd>importlib</dd>
+</dl>
+</section>
+<section id="msilib">
+<h4><a class="toc-backref" href="#msilib">msilib</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/msilib.html">msilib</a> package is a
+Windows-only package. It supports the creation of Microsoft Installers (MSI).
+The package also exposes additional APIs to create cabinet files (CAB). The
+module is used to facilitate distutils to create MSI installers with the
+<code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code> command. In the past it was used to create CPython’s official
+Windows installer, too.</p>
+<p>Microsoft is slowly moving away from MSI in favor of Windows 10 Apps (AppX)
+as new deployment model <a class="footnote-reference brackets" href="#id59" id="id43">3</a>.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>C extension + Python code</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+<section id="parser">
+<h4><a class="toc-backref" href="#parser">parser</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/parser.html">parser</a> module provides
+an interface to Python’s internal parser and bytecode compiler. The stdlib
+has superior ways to interact with the parse tree. From Python 2.5 onward,
+it’s much more convenient to cut in at the Abstract Syntax Tree (AST)
+generation and compilation stage.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">parser</span></code> module causes additional work. It’s C code that must be
+kept in sync with any change to Python’s grammar and internal parser.
+Pablo wants to remove the parser module and promote lib2to3’s pgen2 instead
+<a class="footnote-reference brackets" href="#id62" id="id45">6</a>.</p>
+<p>Most importantly the presence of the <code class="docutils literal notranslate"><span class="pre">parser</span></code> module makes it harder to
+switch to something more powerful than a LL(1) parser <a class="footnote-reference brackets" href="#id63" id="id46">7</a>. Since the
+<code class="docutils literal notranslate"><span class="pre">parser</span></code> module is documented as deprecated since Python 2.5 and a new
+parsing technology is planned for 3.9, the <code class="docutils literal notranslate"><span class="pre">parser</span></code> module is scheduled for
+removal in 3.9.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>C extension</dd>
+<dt>Deprecated in</dt><dd>3.8, documented as deprecated since <strong>2.5</strong></dd>
+<dt>To be removed in</dt><dd><strong>3.9</strong></dd>
+<dt>Has a designated expert</dt><dd>yes, experts have deprecated the module.</dd>
+<dt>Substitute</dt><dd>ast, lib2to3.pgen2</dd>
+</dl>
+</section>
+<section id="pipes">
+<h4><a class="toc-backref" href="#pipes">pipes</a></h4>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/pipes.html">pipes</a> module provides
+helpers to pipe the input of one command into the output of another command.
+The module is built on top of <code class="docutils literal notranslate"><span class="pre">os.popen</span></code>. Users are encouraged to use
+the subprocess module instead.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.8</dd>
+<dt>To be removed in</dt><dd>3.10</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd>subprocess module</dd>
+</dl>
+</section>
+</section>
+</section>
+<section id="removed-modules">
+<h2><a class="toc-backref" href="#removed-modules">Removed modules</a></h2>
+<section id="fpectl">
+<h3><a class="toc-backref" href="#fpectl">fpectl</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3.6/library/fpectl.html">fpectl</a> module was
+never built by default, its usage was discouraged and considered dangerous.
+It also required a configure flag that caused an ABI incompatibility. The
+module was removed in 3.7 by Nathaniel J. Smith in
+<a class="reference external" href="https://bugs.python.org/issue29137">bpo-29137</a>.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>C extension + CAPI</dd>
+<dt>Deprecated in</dt><dd>3.7</dd>
+<dt>Removed in</dt><dd>3.7</dd>
+<dt>Has a designated expert</dt><dd>n/a</dd>
+<dt>Substitute</dt><dd><strong>none</strong></dd>
+</dl>
+</section>
+</section>
+<section id="modules-to-keep">
+<h2><a class="toc-backref" href="#modules-to-keep">Modules to keep</a></h2>
+<p>Some modules were originally proposed for deprecation.</p>
+<table class="colwidths-given docutils align-default" id="id66">
+<caption><span class="caption-text">Table 2: Withdrawn deprecations</span></caption>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Module</th>
+<th class="head">Deprecated in</th>
+<th class="head">Replacement</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>colorsys</td>
+<td>-</td>
+<td>colormath, colour, colorspacious, Pillow</td>
+</tr>
+<tr class="row-odd"><td>fileinput</td>
+<td>-</td>
+<td>argparse</td>
+</tr>
+<tr class="row-even"><td>getopt</td>
+<td>-</td>
+<td>argparse, optparse</td>
+</tr>
+<tr class="row-odd"><td>lib2to3</td>
+<td>-</td>
+<td></td>
+</tr>
+<tr class="row-even"><td>optparse</td>
+<td><strong>3.2</strong></td>
+<td>argparse</td>
+</tr>
+<tr class="row-odd"><td>wave</td>
+<td>-</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<section id="colorsys">
+<h3><a class="toc-backref" href="#colorsys">colorsys</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/colorsys.html">colorsys</a> module
+defines color conversion functions between RGB, YIQ, HSL, and HSV coordinate
+systems.</p>
+<p>Walter Dörwald, Petr Viktorin, and others requested to keep <code class="docutils literal notranslate"><span class="pre">colorsys</span></code>. The
+module is useful to convert CSS colors between coordinate systems. The
+implementation is simple, mature, and does not impose maintenance overhead
+on core development.</p>
+<p>The PyPI packages <code class="docutils literal notranslate"><span class="pre">colormath</span></code>, <code class="docutils literal notranslate"><span class="pre">colour</span></code>, and <code class="docutils literal notranslate"><span class="pre">colorspacious</span></code> provide more and
+advanced features. The Pillow library is better suited to transform images
+between color systems.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd><a class="reference external" href="https://pypi.org/project/colormath/">colormath</a>,
+<a class="reference external" href="https://pypi.org/project/colour/">colour</a>
+<a class="reference external" href="https://pypi.org/project/colorspacious/">colorspacious</a>,
+<a class="reference external" href="https://pypi.org/project/Pillow/">Pillow</a></dd>
+</dl>
+</section>
+<section id="fileinput">
+<h3><a class="toc-backref" href="#fileinput">fileinput</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/fileinput.html">fileinput</a> module
+implements helpers to iterate over a list of files from <code class="docutils literal notranslate"><span class="pre">sys.argv</span></code>. The
+module predates the <code class="docutils literal notranslate"><span class="pre">optparser</span></code> and <code class="docutils literal notranslate"><span class="pre">argparser</span></code> modules. The same functionality
+can be implemented with the <code class="docutils literal notranslate"><span class="pre">argparser</span></code> module.</p>
+<p>Several core developers expressed their interest to keep the module in the
+standard library, as it is handy for quick scripts.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+</dl>
+</section>
+<section id="lib2to3">
+<h3><a class="toc-backref" href="#lib2to3">lib2to3</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/2to3.html">lib2to3</a> package provides
+the <code class="docutils literal notranslate"><span class="pre">2to3</span></code> command to transpile Python 2 code to Python 3 code.</p>
+<p>The package is useful for other tasks besides porting code from Python 2 to
+3. For example, <a class="reference external" href="https://pypi.org/project/black/">Black</a> <a class="footnote-reference brackets" href="#id154" id="id155">42</a> uses it for code reformatting.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+</dl>
+</section>
+<section id="getopt">
+<h3><a class="toc-backref" href="#getopt">getopt</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/getopt.html">getopt</a> module mimics
+C’s <code class="docutils literal notranslate"><span class="pre">getopt()</span></code> option parser.</p>
+<p>Although users are encouraged to use <code class="docutils literal notranslate"><span class="pre">argparse</span></code> instead, the <code class="docutils literal notranslate"><span class="pre">getopt</span></code> module is
+still widely used. The module is small, simple, and handy for C developers
+to write simple Python scripts.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+<dt>Substitute</dt><dd>argparse</dd>
+</dl>
+</section>
+<section id="optparse">
+<h3><a class="toc-backref" href="#optparse">optparse</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/optparse.html">optparse</a> module is
+the predecessor of the <code class="docutils literal notranslate"><span class="pre">argparse</span></code> module.</p>
+<p>Although it has been deprecated for many years, it’s still too widely used
+to remove it.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python</dd>
+<dt>Deprecated in</dt><dd>3.2</dd>
+<dt>Has a designated expert</dt><dd>yes</dd>
+<dt>Substitute</dt><dd>argparse</dd>
+</dl>
+</section>
+<section id="wave">
+<h3><a class="toc-backref" href="#wave">wave</a></h3>
+<p>The <a class="reference external" href="https://docs.python.org/3/library/wave.html">wave</a> module provides
+support for the WAV sound format.</p>
+<p>The module is not deprecated, because The WAV format is still relevant these
+days. The <code class="docutils literal notranslate"><span class="pre">wave</span></code> module is also used in education, e.g. to show kids how
+to make noise with a computer.</p>
+<p>The module uses one simple function from the <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id116">27</a> module to perform
+byte swapping between little and big endian formats. Before 24 bit WAV
+support was added, byte swap used to be implemented with the <code class="docutils literal notranslate"><span class="pre">array</span></code>
+module. To remove <code class="docutils literal notranslate"><span class="pre">wave</span></code>’s dependency on <code class="docutils literal notranslate"><span class="pre">audioop</span></code>, the byte swap
+function could be either be moved to another module (e.g. <code class="docutils literal notranslate"><span class="pre">operator</span></code>) or
+the <code class="docutils literal notranslate"><span class="pre">array</span></code> module could gain support for 24-bit (3-byte) arrays.</p>
+<dl class="simple">
+<dt>Module type</dt><dd>pure Python (depends on <em>byteswap</em> from <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id117">27</a> C extension)</dd>
+<dt>Has a designated expert</dt><dd>no</dd>
+</dl>
+</section>
+</section>
+<section id="future-maintenance-of-removed-modules">
+<h2><a class="toc-backref" href="#future-maintenance-of-removed-modules">Future maintenance of removed modules</a></h2>
+<p>The main goal of the PEP is to reduce the burden and workload on the Python
+core developer team. Therefore, removed modules will not be maintained by
+the core team as separate PyPI packages. However the removed code, tests and
+documentation may be moved into a new Git repository, so community members
+have a place from which they can pick up and fork code.</p>
+<p>A first draft of a <a class="reference external" href="https://github.com/tiran/legacylib">legacylib</a>
+repository is available on my private GitHub account. The modules could be
+made available on PyPI. The Python core team will not publish or maintain
+the packages. It is my hope that members of the Python community will
+adopt, maintain, and perhaps improve the deprecated modules.</p>
+<p>It’s my hope that some of the deprecated modules will be picked up and
+adopted by users that actually care about them. For example, <code class="docutils literal notranslate"><span class="pre">colorsys</span></code> and
+<code class="docutils literal notranslate"><span class="pre">imghdr</span></code> are useful modules, but have limited feature set. A fork of
+<code class="docutils literal notranslate"><span class="pre">imghdr</span></code> can add new features and support for more image formats, without
+being constrained by Python’s release cycle.</p>
+<p>Most of the modules are in pure Python and can be easily packaged. Some
+depend on a simple C module, e.g. <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id118">27</a> and <a class="reference external" href="https://docs.python.org/3/library/crypt.html">crypt</a> <a class="footnote-reference brackets" href="#id138" id="id139">36</a>. Since <a class="reference external" href="https://docs.python.org/3/library/audioop.html">audioop</a> <a class="footnote-reference brackets" href="#id111" id="id119">27</a>
+does not depend on any external libraries, it can be shipped as binary
+wheels with some effort. Other C modules can be replaced with <code class="docutils literal notranslate"><span class="pre">ctypes</span></code> or <code class="docutils literal notranslate"><span class="pre">cffi</span></code>.
+For example, I created <a class="reference external" href="https://pypi.org/project/legacycrypt/">legacycrypt</a> <a class="footnote-reference brackets" href="#id89" id="id91">18</a>, which provides a full implementation of
+<code class="docutils literal notranslate"><span class="pre">crypt</span></code>. It is implemented on top of a ctypes wrapper around <code class="docutils literal notranslate"><span class="pre">libxcrypt</span></code>
+and <code class="docutils literal notranslate"><span class="pre">libcrypt</span></code> instead of a C extension like the original <code class="docutils literal notranslate"><span class="pre">_crypt</span></code>
+module.</p>
+</section>
+<section id="discussions">
+<h2><a class="toc-backref" href="#discussions">Discussions</a></h2>
+<ul class="simple">
+<li>Elana Hashman and Nick Coghlan suggested to keep the <code class="docutils literal notranslate"><span class="pre">getopt</span></code> module.</li>
+<li>Berker Peksag proposed to deprecate and removed <code class="docutils literal notranslate"><span class="pre">msilib</span></code>.</li>
+<li>Brett Cannon recommended to delay active deprecation warnings and removal
+of modules like <code class="docutils literal notranslate"><span class="pre">imp</span></code> until Python 3.10. Version 3.8 will be released
+shortly before Python 2 reaches end-of-life. A delay reduced churn for
+users that migrate from Python 2 to 3.8.</li>
+<li>Brett also came up with the idea to keep <code class="docutils literal notranslate"><span class="pre">lib2to3</span></code>. The package is useful
+for other purposes, e.g. <a class="reference external" href="https://pypi.org/project/black/">Black</a> uses
+it to reformat Python code.</li>
+<li>At one point, distutils was mentioned in the same sentence as this PEP.
+To avoid lengthy discussion and delay of the PEP, I decided against dealing
+with distutils. Deprecation of the distutils package will be handled by
+another PEP.</li>
+<li>Multiple people (Gregory P. Smith, David Beazley, Nick Coghlan, …)
+convinced me to keep the <a class="reference external" href="https://docs.python.org/3/library/wave.html">wave</a> <a class="footnote-reference brackets" href="#id151" id="id153">41</a> module. <a class="footnote-reference brackets" href="#id60" id="id55">4</a></li>
+<li>Gregory P. Smith proposed to deprecate <a class="reference external" href="https://docs.python.org/3/library/nntplib.html">nntplib</a> <a class="footnote-reference brackets" href="#id133" id="id134">34</a>. <a class="footnote-reference brackets" href="#id60" id="id56">4</a></li>
+<li>Andrew Svetlov mentioned the <code class="docutils literal notranslate"><span class="pre">socketserver</span></code> module is questionable.
+However it’s used to implement <code class="docutils literal notranslate"><span class="pre">http.server</span></code> and <code class="docutils literal notranslate"><span class="pre">xmlrpc.server</span></code>. The
+stdlib doesn’t have a replacement for the servers, yet.</li>
+</ul>
+</section>
+<section id="update-history">
+<h2><a class="toc-backref" href="#update-history">Update history</a></h2>
+<section id="update-1">
+<h3><a class="toc-backref" href="#update-1">Update 1</a></h3>
+<ul class="simple">
+<li>Deprecate <a class="reference external" href="https://docs.python.org/3/library/parser.html">parser</a> <a class="footnote-reference brackets" href="#id142" id="id145">38</a> module</li>
+<li>Keep <a class="reference external" href="https://docs.python.org/3/library/fileinput.html">fileinput</a> <a class="footnote-reference brackets" href="#id149" id="id150">40</a> module</li>
+<li>Elaborate why <code class="docutils literal notranslate"><span class="pre">crypt</span></code> and <code class="docutils literal notranslate"><span class="pre">spwd</span></code> are dangerous and bad</li>
+<li>Improve sections for <a class="reference external" href="https://docs.python.org/3/library/cgitb.html">cgitb</a> <a class="footnote-reference brackets" href="#id129" id="id130">32</a>, <a class="reference external" href="https://docs.python.org/3/library/colorsys.html">colorsys</a> <a class="footnote-reference brackets" href="#id146" id="id147">39</a>, <a class="reference external" href="https://docs.python.org/3/library/nntplib.html">nntplib</a> <a class="footnote-reference brackets" href="#id133" id="id135">34</a>, and <a class="reference external" href="https://docs.python.org/3/library/smtpd.html">smtpd</a> <a class="footnote-reference brackets" href="#id131" id="id132">33</a> modules</li>
+<li>The <a class="reference external" href="https://docs.python.org/3/library/colorsys.html">colorsys</a> <a class="footnote-reference brackets" href="#id146" id="id148">39</a>, <code class="docutils literal notranslate"><span class="pre">crypt</span></code>, <a class="reference external" href="https://docs.python.org/3/library/imghdr.html">imghdr</a> <a class="footnote-reference brackets" href="#id120" id="id122">28</a>, <a class="reference external" href="https://docs.python.org/3/library/sndhdr.html">sndhdr</a> <a class="footnote-reference brackets" href="#id123" id="id124">29</a>, and <code class="docutils literal notranslate"><span class="pre">spwd</span></code> sections now
+list suitable substitutions</li>
+<li>Mention that <code class="docutils literal notranslate"><span class="pre">socketserver</span></code> is going to stay for <code class="docutils literal notranslate"><span class="pre">http.server</span></code> and
+<code class="docutils literal notranslate"><span class="pre">xmlrpc.server</span></code></li>
+<li>The future maintenance section now states that the deprecated modules
+may be adopted by Python community members</li>
+</ul>
+</section>
+<section id="update-2">
+<h3><a class="toc-backref" href="#update-2">Update 2</a></h3>
+<ul class="simple">
+<li>Keep <code class="docutils literal notranslate"><span class="pre">colorsys</span></code> module</li>
+<li>Add experts</li>
+<li>Redirect discussions to discuss.python.org</li>
+<li>Deprecate <a class="reference external" href="https://docs.python.org/3/library/telnetlib.html">telnetlib</a> <a class="footnote-reference brackets" href="#id136" id="id137">35</a></li>
+<li>Deprecate compat32 policy of email package</li>
+<li>Add creation year to overview table</li>
+<li>Mention <span class="target" id="index-8"></span><a class="pep reference external" href="../pep-0206"><strong>PEP 206</strong></a> and <span class="target" id="index-9"></span><a class="pep reference external" href="../pep-3108"><strong>PEP 3108</strong></a></li>
+<li>Update sections for <code class="docutils literal notranslate"><span class="pre">aifc</span></code>, <code class="docutils literal notranslate"><span class="pre">audioop</span></code>, <code class="docutils literal notranslate"><span class="pre">cgi</span></code>, and <code class="docutils literal notranslate"><span class="pre">wave</span></code>.</li>
+</ul>
+</section>
+<section id="update-3">
+<h3><a class="toc-backref" href="#update-3">Update 3</a></h3>
+<ul class="simple">
+<li>Keep the legacy email API modules.  Internal deprecations will be
+handled separately.</li>
+</ul>
+</section>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id57"><span class="brackets"><a class="fn-backref" href="#id16">1</a></span></dt>
+<dd><a class="reference external" href="https://en.wikipedia.org/wiki/Open_Sound_System#Free,_proprietary,_free">https://en.wikipedia.org/wiki/Open_Sound_System#Free,_proprietary,_free</a></dd>
+<dt class="label" id="id58"><span class="brackets"><a class="fn-backref" href="#id17">2</a></span></dt>
+<dd><a class="reference external" href="https://man.openbsd.org/ossaudio">https://man.openbsd.org/ossaudio</a></dd>
+<dt class="label" id="id59"><span class="brackets"><a class="fn-backref" href="#id43">3</a></span></dt>
+<dd><a class="reference external" href="https://blogs.msmvps.com/installsite/blog/2015/05/03/the-future-of-windows-installer-msi-in-the-light-of-windows-10-and-the-universal-windows-platform/">https://blogs.msmvps.com/installsite/blog/2015/05/03/the-future-of-windows-installer-msi-in-the-light-of-windows-10-and-the-universal-windows-platform/</a></dd>
+<dt class="label" id="id60"><span class="brackets">4</span><span class='fn-backref''><em> (<a href='#id55'>1</a>, <a href='#id56'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://twitter.com/ChristianHeimes/status/1130257799475335169">https://twitter.com/ChristianHeimes/status/1130257799475335169</a></dd>
+<dt class="label" id="id61"><span class="brackets"><a class="fn-backref" href="#id1">5</a></span></dt>
+<dd><a class="reference external" href="https://twitter.com/dabeaz/status/1130278844479545351">https://twitter.com/dabeaz/status/1130278844479545351</a></dd>
+<dt class="label" id="id62"><span class="brackets"><a class="fn-backref" href="#id45">6</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-May/157464.html">https://mail.python.org/pipermail/python-dev/2019-May/157464.html</a></dd>
+<dt class="label" id="id63"><span class="brackets"><a class="fn-backref" href="#id46">7</a></span></dt>
+<dd><a class="reference external" href="https://discuss.python.org/t/switch-pythons-parsing-tech-to-something-more-powerful-than-ll-1/379">https://discuss.python.org/t/switch-pythons-parsing-tech-to-something-more-powerful-than-ll-1/379</a></dd>
+<dt class="label" id="id64"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-May/157634.html">https://mail.python.org/pipermail/python-dev/2019-May/157634.html</a></dd>
+<dt class="label" id="id67"><span class="brackets"><a class="fn-backref" href="#id68">9</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/aiosmtpd/">https://pypi.org/project/aiosmtpd/</a></dd>
+<dt class="label" id="id69"><span class="brackets"><a class="fn-backref" href="#id70">10</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/argon2-cffi/">https://pypi.org/project/argon2-cffi/</a></dd>
+<dt class="label" id="id71"><span class="brackets"><a class="fn-backref" href="#id72">11</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/ast.html">https://docs.python.org/3/library/ast.html</a></dd>
+<dt class="label" id="id73"><span class="brackets"><a class="fn-backref" href="#id74">12</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/astroid/">https://pypi.org/project/astroid/</a></dd>
+<dt class="label" id="id75"><span class="brackets">13</span><span class='fn-backref''><em> (<a href='#id76'>1</a>, <a href='#id77'>2</a>, <a href='#id86'>3</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/hashlib.html">https://docs.python.org/3/library/hashlib.html</a></dd>
+<dt class="label" id="id78"><span class="brackets"><a class="fn-backref" href="#id79">14</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/bcrypt/">https://pypi.org/project/bcrypt/</a></dd>
+<dt class="label" id="id80"><span class="brackets">15</span><span class='fn-backref''><em> (<a href='#id81'>1</a>, <a href='#id82'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/Exscript/">https://pypi.org/project/Exscript/</a></dd>
+<dt class="label" id="id83"><span class="brackets">16</span><span class='fn-backref''><em> (<a href='#id84'>1</a>, <a href='#id85'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/filetype/">https://pypi.org/project/filetype/</a></dd>
+<dt class="label" id="id87"><span class="brackets"><a class="fn-backref" href="#id88">17</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/importlib.html">https://docs.python.org/3/library/importlib.html</a></dd>
+<dt class="label" id="id89"><span class="brackets">18</span><span class='fn-backref''><em> (<a href='#id90'>1</a>, <a href='#id91'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/legacycrypt/">https://pypi.org/project/legacycrypt/</a></dd>
+<dt class="label" id="id92"><span class="brackets"><a class="fn-backref" href="#id93">19</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/passlib/">https://pypi.org/project/passlib/</a></dd>
+<dt class="label" id="id94"><span class="brackets">20</span><span class='fn-backref''><em> (<a href='#id95'>1</a>, <a href='#id96'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/puremagic/">https://pypi.org/project/puremagic/</a></dd>
+<dt class="label" id="id97"><span class="brackets">21</span><span class='fn-backref''><em> (<a href='#id98'>1</a>, <a href='#id99'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/python-magic/">https://pypi.org/project/python-magic/</a></dd>
+<dt class="label" id="id100"><span class="brackets"><a class="fn-backref" href="#id101">22</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/python-pam/">https://pypi.org/project/python-pam/</a></dd>
+<dt class="label" id="id102"><span class="brackets"><a class="fn-backref" href="#id103">23</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/simplepam/">https://pypi.org/project/simplepam/</a></dd>
+<dt class="label" id="id104"><span class="brackets"><a class="fn-backref" href="#id105">24</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/subprocess.html">https://docs.python.org/3/library/subprocess.html</a></dd>
+<dt class="label" id="id106"><span class="brackets">25</span><span class='fn-backref''><em> (<a href='#id107'>1</a>, <a href='#id108'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/telnetlib3/">https://pypi.org/project/telnetlib3/</a></dd>
+<dt class="label" id="id109"><span class="brackets"><a class="fn-backref" href="#id110">26</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/aifc.html">https://docs.python.org/3/library/aifc.html</a></dd>
+<dt class="label" id="id111"><span class="brackets">27</span><span class='fn-backref''><em> (<a href='#id112'>1</a>, <a href='#id113'>2</a>, <a href='#id114'>3</a>, <a href='#id115'>4</a>, <a href='#id116'>5</a>, <a href='#id117'>6</a>, <a href='#id118'>7</a>, <a href='#id119'>8</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/audioop.html">https://docs.python.org/3/library/audioop.html</a></dd>
+<dt class="label" id="id120"><span class="brackets">28</span><span class='fn-backref''><em> (<a href='#id121'>1</a>, <a href='#id122'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/imghdr.html">https://docs.python.org/3/library/imghdr.html</a></dd>
+<dt class="label" id="id123"><span class="brackets"><a class="fn-backref" href="#id124">29</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/sndhdr.html">https://docs.python.org/3/library/sndhdr.html</a></dd>
+<dt class="label" id="id125"><span class="brackets"><a class="fn-backref" href="#id126">30</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/sunhdr.html">https://docs.python.org/3/library/sunhdr.html</a></dd>
+<dt class="label" id="id127"><span class="brackets"><a class="fn-backref" href="#id128">31</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/asyncore.html">https://docs.python.org/3/library/asyncore.html</a></dd>
+<dt class="label" id="id129"><span class="brackets"><a class="fn-backref" href="#id130">32</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/cgitb.html">https://docs.python.org/3/library/cgitb.html</a></dd>
+<dt class="label" id="id131"><span class="brackets"><a class="fn-backref" href="#id132">33</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/smtpd.html">https://docs.python.org/3/library/smtpd.html</a></dd>
+<dt class="label" id="id133"><span class="brackets">34</span><span class='fn-backref''><em> (<a href='#id134'>1</a>, <a href='#id135'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/nntplib.html">https://docs.python.org/3/library/nntplib.html</a></dd>
+<dt class="label" id="id136"><span class="brackets"><a class="fn-backref" href="#id137">35</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/telnetlib.html">https://docs.python.org/3/library/telnetlib.html</a></dd>
+<dt class="label" id="id138"><span class="brackets"><a class="fn-backref" href="#id139">36</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/crypt.html">https://docs.python.org/3/library/crypt.html</a></dd>
+<dt class="label" id="id140"><span class="brackets"><a class="fn-backref" href="#id141">37</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/spwd.html">https://docs.python.org/3/library/spwd.html</a></dd>
+<dt class="label" id="id142"><span class="brackets">38</span><span class='fn-backref''><em> (<a href='#id143'>1</a>, <a href='#id144'>2</a>, <a href='#id145'>3</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/parser.html">https://docs.python.org/3/library/parser.html</a></dd>
+<dt class="label" id="id146"><span class="brackets">39</span><span class='fn-backref''><em> (<a href='#id147'>1</a>, <a href='#id148'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/colorsys.html">https://docs.python.org/3/library/colorsys.html</a></dd>
+<dt class="label" id="id149"><span class="brackets"><a class="fn-backref" href="#id150">40</a></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/fileinput.html">https://docs.python.org/3/library/fileinput.html</a></dd>
+<dt class="label" id="id151"><span class="brackets">41</span><span class='fn-backref''><em> (<a href='#id152'>1</a>, <a href='#id153'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/wave.html">https://docs.python.org/3/library/wave.html</a></dd>
+<dt class="label" id="id154"><span class="brackets"><a class="fn-backref" href="#id155">42</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/black/">https://pypi.org/project/black/</a></dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0594.rst">https://github.com/python/peps/blob/master/pep-0594.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0594.rst">2021-02-03 14:06:23 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 594 – Removing dead batteries from the standard library</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#deprecation-schedule">Deprecation schedule</a><ul>
+<li><a class="reference internal" href="#id2">3.8</a></li>
+<li><a class="reference internal" href="#id3">3.9</a></li>
+<li><a class="reference internal" href="#id4">3.10</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pep-acceptance-process">PEP acceptance process</a></li>
+<li><a class="reference internal" href="#deprecated-modules">Deprecated modules</a><ul>
+<li><a class="reference internal" href="#data-encoding-modules">Data encoding modules</a><ul>
+<li><a class="reference internal" href="#binhex">binhex</a></li>
+<li><a class="reference internal" href="#uu-and-the-uu-encoding">uu and the uu encoding</a></li>
+<li><a class="reference internal" href="#xdrlib">xdrlib</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#multimedia-modules">Multimedia modules</a><ul>
+<li><a class="reference internal" href="#aifc">aifc</a></li>
+<li><a class="reference internal" href="#audioop">audioop</a></li>
+<li><a class="reference internal" href="#chunk">chunk</a></li>
+<li><a class="reference internal" href="#imghdr">imghdr</a></li>
+<li><a class="reference internal" href="#ossaudiodev">ossaudiodev</a></li>
+<li><a class="reference internal" href="#sndhdr">sndhdr</a></li>
+<li><a class="reference internal" href="#sunau">sunau</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#networking-modules">Networking modules</a><ul>
+<li><a class="reference internal" href="#asynchat">asynchat</a></li>
+<li><a class="reference internal" href="#asyncore">asyncore</a></li>
+<li><a class="reference internal" href="#cgi">cgi</a></li>
+<li><a class="reference internal" href="#cgitb">cgitb</a></li>
+<li><a class="reference internal" href="#smtpd">smtpd</a></li>
+<li><a class="reference internal" href="#nntplib">nntplib</a></li>
+<li><a class="reference internal" href="#telnetlib">telnetlib</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#operating-system-interface">Operating system interface</a><ul>
+<li><a class="reference internal" href="#crypt">crypt</a></li>
+<li><a class="reference internal" href="#macpath">macpath</a></li>
+<li><a class="reference internal" href="#nis">nis</a></li>
+<li><a class="reference internal" href="#spwd">spwd</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#misc-modules">Misc modules</a><ul>
+<li><a class="reference internal" href="#formatter">formatter</a></li>
+<li><a class="reference internal" href="#imp">imp</a></li>
+<li><a class="reference internal" href="#msilib">msilib</a></li>
+<li><a class="reference internal" href="#parser">parser</a></li>
+<li><a class="reference internal" href="#pipes">pipes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#removed-modules">Removed modules</a><ul>
+<li><a class="reference internal" href="#fpectl">fpectl</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#modules-to-keep">Modules to keep</a><ul>
+<li><a class="reference internal" href="#colorsys">colorsys</a></li>
+<li><a class="reference internal" href="#fileinput">fileinput</a></li>
+<li><a class="reference internal" href="#lib2to3">lib2to3</a></li>
+<li><a class="reference internal" href="#getopt">getopt</a></li>
+<li><a class="reference internal" href="#optparse">optparse</a></li>
+<li><a class="reference internal" href="#wave">wave</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#future-maintenance-of-removed-modules">Future maintenance of removed modules</a></li>
+<li><a class="reference internal" href="#discussions">Discussions</a></li>
+<li><a class="reference internal" href="#update-history">Update history</a><ul>
+<li><a class="reference internal" href="#update-1">Update 1</a></li>
+<li><a class="reference internal" href="#update-2">Update 2</a></li>
+<li><a class="reference internal" href="#update-3">Update 3</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0594.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

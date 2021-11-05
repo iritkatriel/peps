@@ -1,0 +1,414 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 659 – Specializing Adaptive Interpreter | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 659 – Specializing Adaptive Interpreter</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 659 – Specializing Adaptive Interpreter</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">659</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Specializing Adaptive Interpreter</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Mark Shannon &lt;mark&#32;&#97;t&#32;hotpy.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">13-Apr-2021</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">11-May-2021</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#performance">Performance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#quickening">Quickening</a></li>
+<li><a class="reference internal" href="#adaptive-instructions">Adaptive instructions</a></li>
+<li><a class="reference internal" href="#specialization">Specialization</a></li>
+<li><a class="reference internal" href="#ancillary-data">Ancillary data</a></li>
+<li><a class="reference internal" href="#data-layout">Data layout</a></li>
+<li><a class="reference internal" href="#example-families-of-instructions">Example families of instructions</a><ul>
+<li><a class="reference internal" href="#call-function">CALL_FUNCTION</a></li>
+<li><a class="reference internal" href="#load-global">LOAD_GLOBAL</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#compatibility">Compatibility</a></li>
+<li><a class="reference internal" href="#costs">Costs</a><ul>
+<li><a class="reference internal" href="#memory-use">Memory use</a><ul>
+<li><a class="reference internal" href="#comparing-memory-use-to-3-10">Comparing memory use to 3.10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>In order to perform well, virtual machines for dynamic languages must specialize the code that they execute
+to the types and values in the program being run.
+This specialization is often associated with “JIT” compilers, but is beneficial even without machine code generation.</p>
+<p>A specializing, adaptive interpreter is one that speculatively specializes on the types or values it is currently operating on,
+and adapts to changes in those types and values.</p>
+<p>Specialization gives us improved performance, and adaptation allows the interpreter to rapidly change when the pattern of usage in a program alters,
+limiting the amount of additional work caused by mis-specialization.</p>
+<p>This PEP proposes using a specializing, adaptive interpreter that specializes code aggressively, but over a very small region,
+and is able to adjust to mis-specialization rapidly and at low cost.</p>
+<p>Adding a specializing, adaptive interpreter to CPython will bring significant performance improvements.
+It is hard to come up with meaningful numbers, as it depends very much on the benchmarks and on work that has not yet happened.
+Extensive experimentation suggests speedups of up to 50%.
+Even if the speedup were only 25%, this would still be a worthwhile enhancement.</p>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#motivation">Motivation</a></h2>
+<p>Python is widely acknowledged as slow.
+Whilst Python will never attain the performance of low-level languages like C, Fortran, or even Java,
+we would like it to be competitive with fast implementations of scripting languages, like V8 for Javascript or luajit for lua.
+Specifically, we want to achieve these performance goals with CPython to benefit all users of Python
+including those unable to use PyPy or other alternative virtual machines.</p>
+<p>Achieving these performance goals is a long way off, and will require a lot of engineering effort,
+but we can make a significant step towards those goals by speeding up the interpreter.
+Both academic research and practical implementations have shown that a fast interpreter is a key part of a fast virtual machine.</p>
+<p>Typical optimizations for virtual machines are expensive, so a long “warm up” time is required
+to gain confidence that the cost of optimization is justified.
+In order to get speed-ups rapidly, without noticeable warmup times,
+the VM should speculate that specialization is justified even after a few executions of a function.
+To do that effectively, the interpreter must be able to optimize and deoptimize continually and very cheaply.</p>
+<p>By using adaptive and speculative specialization at the granularity of individual virtual machine instructions, we get a faster
+interpreter that also generates profiling information for more sophisticated optimizations in the future.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>There are many practical ways to speed-up a virtual machine for a dynamic language.
+However, specialization is the most important, both in itself and as an enabler of other optimizations.
+Therefore it makes sense to focus our efforts on specialization first, if we want to improve the performance of CPython.</p>
+<p>Specialization is typically done in the context of a JIT compiler, but research shows specialization in an interpreter
+can boost performance significantly, even outperforming a naive compiler <a class="footnote-reference brackets" href="#id6" id="id1">1</a>.</p>
+<p>There have been several ways of doing this proposed in the academic literature,
+but most attempt to optimize regions larger than a single bytecode <a class="footnote-reference brackets" href="#id6" id="id2">1</a> <a class="footnote-reference brackets" href="#id7" id="id3">2</a>.
+Using larger regions than a single instruction, requires code to handle deoptimization in the middle of a region.
+Specialization at the level of individual bytecodes makes deoptimization trivial, as it cannot occur in the middle of a region.</p>
+<p>By speculatively specializing individual bytecodes, we can gain significant performance improvements without anything but the most local,
+and trivial to implement, deoptimizations.</p>
+<p>The closest approach to this PEP in the literature is “Inline Caching meets Quickening” <a class="footnote-reference brackets" href="#id8" id="id4">3</a>.
+This PEP has the advantages of inline caching, but adds the ability to quickly deoptimize making the performance
+more robust in cases where specialization fails or is not stable.</p>
+<section id="performance">
+<h3><a class="toc-backref" href="#performance">Performance</a></h3>
+<p>The expected speedup of 50% can be broken roughly down as follows:</p>
+<ul class="simple">
+<li>In the region of 30% from specialization. Much of that is from specialization of calls,
+with improvements in instructions that are already specialized such as <code class="docutils literal notranslate"><span class="pre">LOAD_ATTR</span></code> and <code class="docutils literal notranslate"><span class="pre">LOAD_GLOBAL</span></code>
+contributing much of the remainder. Specialization of operations adds a small amount.</li>
+<li>About 10% from improved dispatch such as super-instructions and other optimizations enabled by quickening.</li>
+<li>Further increases in the benefits of other optimizations, as they can exploit, or be exploited by specialization.</li>
+</ul>
+</section>
+</section>
+<section id="implementation">
+<h2><a class="toc-backref" href="#implementation">Implementation</a></h2>
+<section id="overview">
+<h3><a class="toc-backref" href="#overview">Overview</a></h3>
+<p>Once any instruction in a code object has executed a few times, that code object will be “quickened” by allocating a new array
+for the bytecode that can be modified at runtime, and is not constrained as the <code class="docutils literal notranslate"><span class="pre">code.co_code</span></code> object is.
+From that point onwards, whenever any instruction in that code object is executed, it will use the quickened form.</p>
+<p>Any instruction that would benefit from specialization will be replaced by an “adaptive” form of that instruction.
+When executed, the adaptive instructions will specialize themselves in response to the types and values that they see.</p>
+</section>
+<section id="quickening">
+<h3><a class="toc-backref" href="#quickening">Quickening</a></h3>
+<p>Quickening is the process of replacing slow instructions with faster variants.</p>
+<p>Quickened code has number of advantages over the normal bytecode:</p>
+<ul class="simple">
+<li>It can be changed at runtime</li>
+<li>It can use super-instructions that span lines and take multiple operands.</li>
+<li>It does not need to handle tracing as it can fallback to the normal bytecode for that.</li>
+</ul>
+<p>In order that tracing can be supported, and quickening performed quickly, the quickened instruction format should match the normal
+bytecode format: 16-bit instructions of 8-bit opcode followed by 8-bit operand.</p>
+</section>
+<section id="adaptive-instructions">
+<h3><a class="toc-backref" href="#adaptive-instructions">Adaptive instructions</a></h3>
+<p>Each instruction that would benefit from specialization is replaced by an adaptive version during quickening.
+For example, the <code class="docutils literal notranslate"><span class="pre">LOAD_ATTR</span></code> instruction would be replaced with <code class="docutils literal notranslate"><span class="pre">LOAD_ATTR_ADAPTIVE</span></code>.</p>
+<p>Each adaptive instruction maintains a counter, and periodically attempts to specialize itself.</p>
+</section>
+<section id="specialization">
+<h3><a class="toc-backref" href="#specialization">Specialization</a></h3>
+<p>CPython bytecode contains many bytecodes that represent high-level operations, and would benefit from specialization.
+Examples include <code class="docutils literal notranslate"><span class="pre">CALL_FUNCTION</span></code>, <code class="docutils literal notranslate"><span class="pre">LOAD_ATTR</span></code>, <code class="docutils literal notranslate"><span class="pre">LOAD_GLOBAL</span></code> and <code class="docutils literal notranslate"><span class="pre">BINARY_ADD</span></code>.</p>
+<p>By introducing a “family” of specialized instructions for each of these instructions allows effective specialization,
+since each new instruction is specialized to a single task.
+Each family will include an “adaptive” instruction, that maintains a counter and periodically attempts to specialize itself.
+Each family will also include one or more specialized instructions that perform the equivalent
+of the generic operation much faster provided their inputs are as expected.
+Each specialized instruction will maintain a saturating counter which will be incremented whenever the inputs are as expected.
+Should the inputs not be as expected, the counter will be decremented and the generic operation will be performed.
+If the counter reaches the minimum value, the instruction is deoptimized by simply replacing its opcode with the adaptive version.</p>
+</section>
+<section id="ancillary-data">
+<h3><a class="toc-backref" href="#ancillary-data">Ancillary data</a></h3>
+<p>Most families of specialized instructions will require more information than can fit in an 8-bit operand.
+To do this, an array of specialization data entries will be maintained alongside the new instruction array.
+For instructions that need specialization data, the operand in the quickened array will serve as a partial index,
+along with the offset of the instruction, to find the first specialization data entry for that instruction.
+Each entry will be 8 bytes (for a 64 bit machine). The data in an entry, and the number of entries needed, will vary from instruction to instruction.</p>
+</section>
+<section id="data-layout">
+<h3><a class="toc-backref" href="#data-layout">Data layout</a></h3>
+<p>Quickened instructions will be stored in an array (it is neither necessary not desirable to store them in a Python object) with the same
+format as the original bytecode. Ancillary data will be stored in a separate array.</p>
+<p>Each instruction will use 0 or more data entries. Each instruction within a family must have the same amount of data allocated, although some
+instructions may not use all of it. Instructions that cannot be specialized, e.g. <code class="docutils literal notranslate"><span class="pre">POP_TOP</span></code>, do not need any entries.
+Experiments show that 25% to 30% of instructions can be usefully specialized.
+Different families will need different amounts of data, but most need 2 entries (16 bytes on a 64 bit machine).</p>
+<p>In order to support larger functions than 256 instructions, we compute the offset of the first data entry for instructions
+as <code class="docutils literal notranslate"><span class="pre">(instruction</span> <span class="pre">offset)//2</span> <span class="pre">+</span> <span class="pre">(quickened</span> <span class="pre">operand)</span></code>.</p>
+<p>Compared to the opcache in Python 3.10, this design:</p>
+<ul class="simple">
+<li>is faster; it requires no memory reads to compute the offset. 3.10 requires two reads, which are dependent.</li>
+<li>uses much less memory, as the data can be different sizes for different instruction families, and doesn’t need an additional array of offsets.</li>
+<li>can support much larger functions, up to about 5000 instructions per function. 3.10 can support about 1000.</li>
+</ul>
+</section>
+<section id="example-families-of-instructions">
+<h3><a class="toc-backref" href="#example-families-of-instructions">Example families of instructions</a></h3>
+<section id="call-function">
+<h4><a class="toc-backref" href="#call-function">CALL_FUNCTION</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">CALL_FUNCTION</span></code> instruction calls the (N+1)th item on the stack with top N items on the stack as arguments.</p>
+<p>This is an obvious candidate for specialization. For example, the call in <code class="docutils literal notranslate"><span class="pre">len(x)</span></code> is represented as the bytecode <code class="docutils literal notranslate"><span class="pre">CALL_FUNCTION</span> <span class="pre">1</span></code>.
+In this case we would always expect the object <code class="docutils literal notranslate"><span class="pre">len</span></code> to be the function. We probably don’t want to specialize for <code class="docutils literal notranslate"><span class="pre">len</span></code>
+(although we might for <code class="docutils literal notranslate"><span class="pre">type</span></code> and <code class="docutils literal notranslate"><span class="pre">isinstance</span></code>), but it would be beneficial to specialize for builtin functions taking a single argument.
+A fast check that the underlying function is a builtin function taking a single argument (<code class="docutils literal notranslate"><span class="pre">METHOD_O</span></code>) would allow us to avoid a
+sequence of checks for number of parameters and keyword arguments.</p>
+<p><code class="docutils literal notranslate"><span class="pre">CALL_FUNCTION_ADAPTIVE</span></code> would track how often it is executed, and call the <code class="docutils literal notranslate"><span class="pre">call_function_optimize</span></code> when executed enough times, or jump
+to <code class="docutils literal notranslate"><span class="pre">CALL_FUNCTION</span></code> otherwise.
+When optimizing, the kind of the function would be checked and if a suitable specialized instruction was found,
+it would replace <code class="docutils literal notranslate"><span class="pre">CALL_FUNCTION_ADAPTIVE</span></code> in place.</p>
+<p>Specializations might include:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">CALL_FUNCTION_PY_SIMPLE</span></code>: Calls to Python functions with exactly matching parameters.</li>
+<li><code class="docutils literal notranslate"><span class="pre">CALL_FUNCTION_PY_DEFAULTS</span></code>: Calls to Python functions with more parameters and default values.
+Since the exact number of defaults needed is known, the instruction needs to do no additional checking or computation; just copy some defaults.</li>
+<li><code class="docutils literal notranslate"><span class="pre">CALL_BUILTIN_O</span></code>: The example given above for calling builtin methods taking exactly one argument.</li>
+<li><code class="docutils literal notranslate"><span class="pre">CALL_BUILTIN_VECTOR</span></code>: For calling builtin function taking vector arguments.</li>
+</ul>
+<p>Note how this allows optimizations that complement other optimizations.
+For example, if the Python and C call stacks were decoupled and the data stack were contiguous,
+then Python-to-Python calls could be made very fast.</p>
+</section>
+<section id="load-global">
+<h4><a class="toc-backref" href="#load-global">LOAD_GLOBAL</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">LOAD_GLOBAL</span></code> instruction looks up a name in the global namespace and then, if not present in the global namespace,
+looks it up in the builtins namespace.
+In 3.9 the C code for the <code class="docutils literal notranslate"><span class="pre">LOAD_GLOBAL</span></code> includes code to check to see whether the whole code object should be modified to add a cache,
+whether either the global or builtins namespace, code to lookup the value in a cache, and fallback code.
+This makes it complicated and bulky. It also performs many redundant operations even when supposedly optimized.</p>
+<p>Using a family of instructions makes the code more maintainable and faster, as each instruction only needs to handle one concern.</p>
+<p>Specializations would include:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">LOAD_GLOBAL_ADAPTIVE</span></code> would operate like <code class="docutils literal notranslate"><span class="pre">CALL_FUNCTION_ADAPTIVE</span></code> above.</li>
+<li><code class="docutils literal notranslate"><span class="pre">LOAD_GLOBAL_MODULE</span></code> can be specialized for the case where the value is in the globals namespace.
+After checking that the keys of the namespace have not changed, it can load the value from the stored index.</li>
+<li><code class="docutils literal notranslate"><span class="pre">LOAD_GLOBAL_BUILTIN</span></code>  can be specialized for the case where the value is in the builtins namespace.
+It needs to check that the keys of the global namespace have not been added to, and that the builtins namespace has not changed.
+Note that we don’t care if the values of the global namespace have changed, just the keys.</li>
+</ul>
+<p>See <a class="footnote-reference brackets" href="#id9" id="id5">4</a> for a full implementation.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This PEP outlines the mechanisms for managing specialization, and does not specify the particular optimizations to be applied.
+The above scheme is just one possible scheme. Many others are possible and may well be better.</p>
+</div>
+</section>
+</section>
+</section>
+<section id="compatibility">
+<h2><a class="toc-backref" href="#compatibility">Compatibility</a></h2>
+<p>There will be no change to the language, library or API.</p>
+<p>The only way that users will be able to detect the presence of the new interpreter is through timing execution, the use of debugging tools,
+or measuring memory use.</p>
+</section>
+<section id="costs">
+<h2><a class="toc-backref" href="#costs">Costs</a></h2>
+<section id="memory-use">
+<h3><a class="toc-backref" href="#memory-use">Memory use</a></h3>
+<p>An obvious concern with any scheme that performs any sort of caching is “how much more memory does it use?”.
+The short answer is “none”.</p>
+<section id="comparing-memory-use-to-3-10">
+<h4><a class="toc-backref" href="#comparing-memory-use-to-3-10">Comparing memory use to 3.10</a></h4>
+<p>The following table shows the additional bytes per instruction to support the 3.10 opcache
+or the proposed adaptive interpreter, on a 64 bit machine.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 41%" />
+<col style="width: 13%" />
+<col style="width: 21%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td>Version</td>
+<td>3.10</td>
+<td>3.10 opt</td>
+<td>3.11</td>
+<td>3.11</td>
+</tr>
+<tr class="row-even"><td>Specialised</td>
+<td>20%</td>
+<td>20%</td>
+<td>25%</td>
+<td>33%</td>
+</tr>
+<tr class="row-odd"><td>quickened code</td>
+<td>0</td>
+<td>0</td>
+<td>2</td>
+<td>2</td>
+</tr>
+<tr class="row-even"><td>opcache_map</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="row-odd"><td>opcache/data</td>
+<td>6.4</td>
+<td>4.8</td>
+<td>4</td>
+<td>5.3</td>
+</tr>
+<tr class="row-even"><td>Total</td>
+<td>7.4</td>
+<td>5.8</td>
+<td>6</td>
+<td>7.3</td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">3.10</span></code> is the current version of 3.10 which uses 32 bytes per entry.
+<code class="docutils literal notranslate"><span class="pre">3.10</span> <span class="pre">opt</span></code> is a hypothetical improved version of 3.10 that uses 24 bytes per entry.</p>
+<p>Even if one third of all instructions were specialized (a high proportion), then the memory use is still less than
+that of 3.10. With a more realistic 25%, then memory use is basically the same as the hypothetical improved version of 3.10.</p>
+</section>
+</section>
+</section>
+<section id="security-implications">
+<h2><a class="toc-backref" href="#security-implications">Security Implications</a></h2>
+<p>None</p>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#rejected-ideas">Rejected Ideas</a></h2>
+<p>Too many to list.</p>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id6"><span class="brackets">1</span><span class='fn-backref''><em> (<a href='#id1'>1</a>, <a href='#id2'>2</a>) </em></span></dt>
+<dd>The construction of high-performance virtual machines for dynamic languages, Mark Shannon 2010.
+<a class="reference external" href="http://theses.gla.ac.uk/2975/1/2011shannonphd.pdf">http://theses.gla.ac.uk/2975/1/2011shannonphd.pdf</a></dd>
+<dt class="label" id="id7"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd>Dynamic Interpretation for Dynamic Scripting Languages
+<a class="reference external" href="https://www.scss.tcd.ie/publications/tech-reports/reports.09/TCD-CS-2009-37.pdf">https://www.scss.tcd.ie/publications/tech-reports/reports.09/TCD-CS-2009-37.pdf</a></dd>
+<dt class="label" id="id8"><span class="brackets"><a class="fn-backref" href="#id4">3</a></span></dt>
+<dd>Inline Caching meets Quickening
+<a class="reference external" href="http://www.complang.tuwien.ac.at/kps09/pdfs/brunthaler.pdf">http://www.complang.tuwien.ac.at/kps09/pdfs/brunthaler.pdf</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id5">4</a></span></dt>
+<dd>Adaptive specializing examples (This will be moved to a more permanent location, once this PEP is accepted)
+<a class="reference external" href="https://gist.github.com/markshannon/556ccc0e99517c25a70e2fe551917c03">https://gist.github.com/markshannon/556ccc0e99517c25a70e2fe551917c03</a></dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0659.rst">https://github.com/python/peps/blob/master/pep-0659.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0659.rst">2021-09-17 18:18:24 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 659 – Specializing Adaptive Interpreter</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#performance">Performance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#quickening">Quickening</a></li>
+<li><a class="reference internal" href="#adaptive-instructions">Adaptive instructions</a></li>
+<li><a class="reference internal" href="#specialization">Specialization</a></li>
+<li><a class="reference internal" href="#ancillary-data">Ancillary data</a></li>
+<li><a class="reference internal" href="#data-layout">Data layout</a></li>
+<li><a class="reference internal" href="#example-families-of-instructions">Example families of instructions</a><ul>
+<li><a class="reference internal" href="#call-function">CALL_FUNCTION</a></li>
+<li><a class="reference internal" href="#load-global">LOAD_GLOBAL</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#compatibility">Compatibility</a></li>
+<li><a class="reference internal" href="#costs">Costs</a><ul>
+<li><a class="reference internal" href="#memory-use">Memory use</a><ul>
+<li><a class="reference internal" href="#comparing-memory-use-to-3-10">Comparing memory use to 3.10</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0659.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

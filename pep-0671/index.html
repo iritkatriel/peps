@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 671 – Syntax for late-bound function argument defaults | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 671 – Syntax for late-bound function argument defaults</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 671 – Syntax for late-bound function argument defaults</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">671</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Syntax for late-bound function argument defaults</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Chris Angelico &lt;rosuav&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">24-Oct-2021</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.11</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">24-Oct-2021</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#choice-of-spelling">Choice of spelling</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#interaction-with-other-open-peps">Interaction with other open PEPs</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#implementation-details">Implementation details</a><ul>
+<li><a class="reference internal" href="#costs">Costs</a></li>
+<li><a class="reference internal" href="#backward-incompatibility">Backward incompatibility</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>Function parameters can have default values which are calculated during
+function definition and saved. This proposal introduces a new form of
+argument default, defined by an expression to be evaluated at function
+call time.</p>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#motivation">Motivation</a></h2>
+<p>Optional function arguments, if omitted, often have some sort of logical
+default value. When this value depends on other arguments, or needs to be
+reevaluated each function call, there is currently no clean way to state
+this in the function header.</p>
+<p>Currently-legal idioms for this include:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Very common: Use None and replace it in the function</span>
+<span class="k">def</span> <span class="nf">bisect_right</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">lo</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hi</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">hi</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">hi</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+<span class="c1"># Also well known: Use a unique custom sentinel object</span>
+<span class="n">_USE_GLOBAL_DEFAULT</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">_USE_GLOBAL_DEFAULT</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">timeout</span> <span class="ow">is</span> <span class="n">_USE_GLOBAL_DEFAULT</span><span class="p">:</span>
+        <span class="n">timeout</span> <span class="o">=</span> <span class="n">default_timeout</span>
+
+<span class="c1"># Unusual: Accept star-args and then validate</span>
+<span class="k">def</span> <span class="nf">add_item</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="o">*</span><span class="n">optional_target</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">optional_target</span><span class="p">:</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">optional_target</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>In each form, <code class="docutils literal notranslate"><span class="pre">help(function)</span></code> fails to show the true default value. Each
+one has additional problems, too; using <code class="docutils literal notranslate"><span class="pre">None</span></code> is only valid if None is not
+itself a plausible function parameter, the custom sentinel requires a global
+constant; and use of star-args implies that more than one argument could be
+given.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification">Specification</a></h2>
+<p>Function default arguments can be defined using the new <code class="docutils literal notranslate"><span class="pre">=&gt;</span></code> notation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">bisect_right</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">lo</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hi</span><span class="o">=&gt;</span><span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">),</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="n">timeout</span><span class="o">=&gt;</span><span class="n">default_timeout</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">add_item</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">target</span><span class="o">=&gt;</span><span class="p">[]):</span>
+<span class="k">def</span> <span class="nf">format_time</span><span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="n">time_t</span><span class="o">=&gt;</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()):</span>
+</pre></div>
+</div>
+<p>The expression is saved in its source code form for the purpose of inspection,
+and bytecode to evaluate it is prepended to the function’s body.</p>
+<p>Notably, the expression is evaluated in the function’s run-time scope, NOT the
+scope in which the function was defined (as are early-bound defaults). This
+allows the expression to refer to other arguments.</p>
+<p>Multiple late-bound arguments are evaluated from left to right, and can refer
+to previously-defined values. Order is defined by the function, regardless of
+the order in which keyword arguments may be passed. Using names of other
+arguments is an error. It is implementation-defined whether this is a syntax
+error or a run-time error, and implementations are free to be more permissive,
+but this should not be relied upon.</p>
+<blockquote>
+<div>def spaminate(sausage=&gt;eggs + 1, eggs=&gt;sausage - 1): # Error
+def selfref(spam=&gt;spam): # Error
+def frob(n=&gt;len(items), items=[]): # Error</div></blockquote>
+<section id="choice-of-spelling">
+<h3><a class="toc-backref" href="#choice-of-spelling">Choice of spelling</a></h3>
+<p>Our chief syntax proposal is <code class="docutils literal notranslate"><span class="pre">name=&gt;expression</span></code> – our two syntax proposals
+… ahem. Amongst our potential syntaxes are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>def bisect(a, hi=&gt;len(a)):
+def bisect(a, hi=:len(a)):
+def bisect(a, hi:=len(a)):
+def bisect(a, hi?=len(a)):
+def bisect(a, hi!=len(a)):
+def bisect(a, hi=\len(a)):
+def bisect(a, hi=`len(a)`):
+def bisect(a, hi=@len(a)):
+def bisect(a, @hi=len(a)):
+</pre></div>
+</div>
+<p>Since default arguments behave largely the same whether they’re early or late
+bound, the preferred syntax is very similar to the existing early-bind syntax.
+The alternatives offer little advantage over the preferred one.</p>
+</section>
+</section>
+<section id="how-to-teach-this">
+<h2><a class="toc-backref" href="#how-to-teach-this">How to Teach This</a></h2>
+<p>Early-bound default arguments should always be taught first, as they are the
+simpler and more efficient way to evaluate arguments. Building on them, late
+bound arguments are broadly equivalent to code at the top of the function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">add_item</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">target</span><span class="o">=&gt;</span><span class="p">[]):</span>
+
+<span class="c1"># Equivalent pseudocode:</span>
+<span class="k">def</span> <span class="nf">add_item</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">target</span><span class="o">=&lt;</span><span class="n">OPTIONAL</span><span class="o">&gt;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">target</span> <span class="n">was</span> <span class="n">omitted</span><span class="p">:</span> <span class="n">target</span> <span class="o">=</span> <span class="p">[]</span>
+</pre></div>
+</div>
+</section>
+<section id="interaction-with-other-open-peps">
+<h2><a class="toc-backref" href="#interaction-with-other-open-peps">Interaction with other open PEPs</a></h2>
+<p><a class="reference external" href="../pep-0661">PEP 661</a> attempts to solve one of the same problems as this does. It seeks to
+improve the documentation of sentinel values in default arguments, where this
+proposal seeks to remove the need for sentinels in many common cases. <a class="reference external" href="../pep-0661">PEP 661</a>
+is able to improve documentation in arbitrarily complicated functions (it
+cites <code class="docutils literal notranslate"><span class="pre">traceback.print_exception</span></code> as its primary motivation, which has two
+arguments which must both-or-neither be specified); on the other hand, many
+of the common cases would no longer need sentinels if the true default could
+be defined by the function. Additionally, dedicated sentinel objects can be
+used as dictionary lookup keys, where <a class="reference external" href="../pep-0671">PEP 671</a> does not apply.</p>
+</section>
+<section id="open-issues">
+<h2><a class="toc-backref" href="#open-issues">Open Issues</a></h2>
+<ul class="simple">
+<li>Annotations go before the default, so in all syntax options, it must be
+unambiguous (both to the human and the parser) whether this is an annotation,
+a default, or both. The worst offender is the <code class="docutils literal notranslate"><span class="pre">:=</span></code> notation, as <code class="docutils literal notranslate"><span class="pre">:int=</span></code>
+would be a valid annotation and early-bound default.</li>
+</ul>
+</section>
+<section id="implementation-details">
+<h2><a class="toc-backref" href="#implementation-details">Implementation details</a></h2>
+<p>The following relates to the reference implementation, and is not necessarily
+part of the specification.</p>
+<p>Argument defaults (positional or keyword) have both their values, as already
+retained, and an extra piece of information. For positional arguments, the
+extras are stored in a tuple in <code class="docutils literal notranslate"><span class="pre">__defaults_extra__</span></code>, and for keyword-only,
+a dict in <code class="docutils literal notranslate"><span class="pre">__kwdefaults_extra__</span></code>. If this attribute is <code class="docutils literal notranslate"><span class="pre">None</span></code>, it is
+equivalent to having <code class="docutils literal notranslate"><span class="pre">None</span></code> for every argument default.</p>
+<p>For each parameter with a late-bound default, the special value <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code>
+is stored as the value placeholder, and the corresponding extra information
+needs to be queried. If it is <code class="docutils literal notranslate"><span class="pre">None</span></code>, then the default is indeed the value
+<code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code>; otherwise, it is a descriptive string and the true value is
+calculated as the function begins.</p>
+<p>When a parameter with a late-bound default is omitted, the
+function will begin with the parameter unbound. The function begins by testing
+for each parameter with a late-bound default, and if unbound, evaluates the
+original expression.</p>
+<p>Out-of-order variable references are permitted as long as the referent has a
+value from an argument or early-bound default.</p>
+<section id="costs">
+<h3><a class="toc-backref" href="#costs">Costs</a></h3>
+<p>When no late-bound argument defaults are used, the following costs should be
+all that are incurred:</p>
+<ul class="simple">
+<li>Function objects require two additional pointers, which will be NULL</li>
+<li>Compiling code and constructing functions have additional flag checks</li>
+<li>Using <code class="docutils literal notranslate"><span class="pre">Ellipsis</span></code> as a default value will require run-time verification
+to see if late-bound defaults exist.</li>
+</ul>
+<p>These costs are expected to be minimal (on 64-bit Linux, this increases all
+function objects from 152 bytes to 168), with virtually no run-time cost when
+late-bound defaults are not used.</p>
+</section>
+<section id="backward-incompatibility">
+<h3><a class="toc-backref" href="#backward-incompatibility">Backward incompatibility</a></h3>
+<p>Where late-bound defaults are not used, behaviour should be identical. Care
+should be taken if Ellipsis is found, as it may not represent itself, but
+beyond that, tools should see existing code unchanged.</p>
+</section>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<p><a class="reference external" href="https://github.com/rosuav/cpython/tree/pep-671">https://github.com/rosuav/cpython/tree/pep-671</a></p>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0671.rst">https://github.com/python/peps/blob/master/pep-0671.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0671.rst">2021-11-01 00:48:09 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 671 – Syntax for late-bound function argument defaults</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#choice-of-spelling">Choice of spelling</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#interaction-with-other-open-peps">Interaction with other open PEPs</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#implementation-details">Implementation details</a><ul>
+<li><a class="reference internal" href="#costs">Costs</a></li>
+<li><a class="reference internal" href="#backward-incompatibility">Backward incompatibility</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0671.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

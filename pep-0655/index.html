@@ -1,0 +1,482 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 655 – Marking individual TypedDict items as required or potentially-missing | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 655 – Marking individual TypedDict items as required or potentially-missing</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 655 – Marking individual TypedDict items as required or potentially-missing</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">655</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Marking individual TypedDict items as required or potentially-missing</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">David Foster &lt;david at dafoster.net&gt;</dd>
+<dt class="field-even">Sponsor</dt>
+<dd class="field-even">Guido van Rossum &lt;guido at python.org&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd">typing-sig at python.org</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Requires</dt>
+<dd class="field-even"><a class="reference external" href="../pep-0604">604</a></dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">30-Jan-2021</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.11</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">31-Jan-2021, 11-Feb-2021, 20-Feb-2021, 26-Feb-2021</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#special-syntax-around-the-key-of-a-typeddict-item">Special syntax around the <em>key</em> of a TypedDict item</a></li>
+<li><a class="reference internal" href="#marking-required-or-potentially-missing-keys-with-an-operator">Marking required or potentially-missing keys with an operator</a></li>
+<li><a class="reference internal" href="#marking-absence-of-a-value-with-a-special-constant">Marking absence of a value with a special constant</a><ul>
+<li><a class="reference internal" href="#misalignment-with-how-unions-apply-to-values">Misalignment with how unions apply to values</a></li>
+<li><a class="reference internal" href="#misalignment-with-how-unions-are-subdivided">Misalignment with how unions are subdivided</a></li>
+<li><a class="reference internal" href="#difficult-to-implement">Difficult to implement</a></li>
+<li><a class="reference internal" href="#introduces-a-second-null-like-value-into-python">Introduces a second null-like value into Python</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replace-optional-with-nullable-repurpose-optional-to-mean-optional-item">Replace Optional with Nullable. Repurpose Optional to mean “optional item”.</a></li>
+<li><a class="reference internal" href="#change-optional-to-mean-optional-item-in-certain-contexts-instead-of-nullable">Change Optional to mean “optional item” in certain contexts instead of “nullable”</a></li>
+<li><a class="reference internal" href="#various-synonyms-for-potentially-missing-item">Various synonyms for “potentially-missing item”</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p><a class="reference external" href="https://www.python.org/dev/peps/pep-0589/">PEP 589</a> defines syntax
+for declaring a TypedDict with all required keys and syntax for defining
+a TypedDict with <a class="reference external" href="https://www.python.org/dev/peps/pep-0589/#totality">all potentially-missing
+keys</a> however it
+does not provide any syntax to declare some keys as required and others
+as potentially-missing. This PEP introduces two new syntaxes:
+<code class="docutils literal notranslate"><span class="pre">Required[...]</span></code> which can be used on individual items of a
+TypedDict to mark them as required, and
+<code class="docutils literal notranslate"><span class="pre">NotRequired[...]</span></code> which can be used on individual items
+to mark them as potentially-missing.</p>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#motivation">Motivation</a></h2>
+<p>It is not uncommon to want to define a TypedDict with some keys that are
+required and others that are potentially-missing. Currently the only way
+to define such a TypedDict is to declare one TypedDict with one value
+for <code class="docutils literal notranslate"><span class="pre">total</span></code> and then inherit it from another TypedDict with a
+different value for <code class="docutils literal notranslate"><span class="pre">total</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">_MovieBase</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>  <span class="c1"># implicitly total=True</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="k">class</span> <span class="nc">Movie</span><span class="p">(</span><span class="n">_MovieBase</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">year</span><span class="p">:</span> <span class="nb">int</span>
+</pre></div>
+</div>
+<p>Having to declare two different TypedDict types for this purpose is
+cumbersome.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>One might think it unusual to propose syntax that prioritizes marking
+<em>required</em> keys rather than syntax for <em>potentially-missing</em> keys, as is
+customary in other languages like TypeScript:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>interface Movie {
+    title: string;
+    year?: number;  // ? marks potentially-missing keys
+}
+</pre></div>
+</div>
+<p>The difficulty is that the best word for marking a potentially-missing
+key, <code class="docutils literal notranslate"><span class="pre">Optional[...]</span></code>, is already used in Python for a completely
+different purpose: marking values that could be either of a particular
+type or <code class="docutils literal notranslate"><span class="pre">None</span></code>. In particular the following does not work:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Movie</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="o">...</span>
+    <span class="n">year</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>  <span class="c1"># means int|None, not potentially-missing!</span>
+</pre></div>
+</div>
+<p>Attempting to use any synonym of “optional” to mark potentially-missing
+keys (like <code class="docutils literal notranslate"><span class="pre">Missing[...]</span></code>) would be too similar to <code class="docutils literal notranslate"><span class="pre">Optional[...]</span></code>
+and be easy to confuse with it.</p>
+<p>Thus it was decided to focus on positive-form phrasing for required keys
+instead, which is straightforward to spell as <code class="docutils literal notranslate"><span class="pre">Required[...]</span></code>.</p>
+<p>Nevertheless it is common for folks wanting to extend a regular
+(<code class="docutils literal notranslate"><span class="pre">total=True</span></code>) TypedDict to only want to add a small number of
+potentially-missing keys, which necessitates a way to mark keys that are
+<em>not</em> required and potentially-missing, and so we also allow the
+<code class="docutils literal notranslate"><span class="pre">NotRequired[...]</span></code> form for that case.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification">Specification</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">typing.Required</span></code> type qualifier is used to indicate that a
+variable declared in a TypedDict definition is a required key:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Movie</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">title</span><span class="p">:</span> <span class="n">Required</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">year</span><span class="p">:</span> <span class="nb">int</span>
+</pre></div>
+</div>
+<p>Additionally the <code class="docutils literal notranslate"><span class="pre">typing.NotRequired</span></code> type qualifier is used to
+indicate that a variable declared in a TypedDict definition is a
+potentially-missing key:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Movie</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>  <span class="c1"># implicitly total=True</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">year</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>It is an error to use <code class="docutils literal notranslate"><span class="pre">Required[...]</span></code> or <code class="docutils literal notranslate"><span class="pre">NotRequired[...]</span></code> in any
+location that is not an item of a TypedDict.</p>
+<p>It is valid to use <code class="docutils literal notranslate"><span class="pre">Required[...]</span></code> and <code class="docutils literal notranslate"><span class="pre">NotRequired[...]</span></code> even for
+items where it is redundant, to enable additional explicitness if desired:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Movie</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">title</span><span class="p">:</span> <span class="n">Required</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>  <span class="c1"># redundant</span>
+    <span class="n">year</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="backwards-compatibility">
+<h2><a class="toc-backref" href="#backwards-compatibility">Backwards Compatibility</a></h2>
+<p>No backward incompatible changes are made by this PEP.</p>
+</section>
+<section id="how-to-teach-this">
+<h2><a class="toc-backref" href="#how-to-teach-this">How to Teach This</a></h2>
+<p>To define a TypedDict where most keys are required and some are
+potentially-missing, define a single TypedDict as normal
+and mark those few keys that are potentially-missing with <code class="docutils literal notranslate"><span class="pre">NotRequired[...]</span></code>.</p>
+<p>To define a TypedDict where most keys are potentially-missing and a few are
+required, define a <code class="docutils literal notranslate"><span class="pre">total=False</span></code> TypedDict
+and mark those few keys that are required with <code class="docutils literal notranslate"><span class="pre">Required[...]</span></code>.</p>
+<p>If some items accept <code class="docutils literal notranslate"><span class="pre">None</span></code> in addition to a regular value, it is
+recommended that the <code class="docutils literal notranslate"><span class="pre">TYPE|None</span></code> syntax be preferred over
+<code class="docutils literal notranslate"><span class="pre">Optional[TYPE]</span></code> for marking such item values, to avoid using
+<code class="docutils literal notranslate"><span class="pre">Required[...]</span></code> or <code class="docutils literal notranslate"><span class="pre">NotRequired[...]</span></code> alongside <code class="docutils literal notranslate"><span class="pre">Optional[...]</span></code>
+within the same TypedDict definition:</p>
+<p>Yes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>  <span class="c1"># for Python 3.7-3.9</span>
+
+<span class="k">class</span> <span class="nc">Dog</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">owner</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="nb">str</span><span class="o">|</span><span class="kc">None</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Avoid (unless Python 3.5-3.6):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Dog</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="c1"># ick; avoid using both Optional and NotRequired</span>
+    <span class="n">owner</span><span class="p">:</span> <span class="n">NotRequired</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+</pre></div>
+</div>
+</section>
+<section id="reference-implementation">
+<h2><a class="toc-backref" href="#reference-implementation">Reference Implementation</a></h2>
+<p>The goal is to be able to make the following statement:</p>
+<blockquote>
+<div>The <a class="reference external" href="http://www.mypy-lang.org/">mypy</a> type checker supports
+<code class="docutils literal notranslate"><span class="pre">Required</span></code> and <code class="docutils literal notranslate"><span class="pre">NotRequired</span></code>. A reference implementation of the
+runtime component is provided in the
+<a class="reference external" href="https://github.com/python/typing/tree/master/typing_extensions">typing_extensions</a>
+module.</div></blockquote>
+<p>The mypy implementation is currently still being worked on.</p>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#rejected-ideas">Rejected Ideas</a></h2>
+<section id="special-syntax-around-the-key-of-a-typeddict-item">
+<h3><a class="toc-backref" href="#special-syntax-around-the-key-of-a-typeddict-item">Special syntax around the <em>key</em> of a TypedDict item</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>class MyThing(TypedDict):
+    opt1?: str  # may not exist, but if exists, value is string
+    opt2: Optional[str]  # always exists, but may have null value
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyThing</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">Optional</span><span class="p">[</span><span class="n">opt1</span><span class="p">]:</span> <span class="nb">str</span>  <span class="c1"># may not exist, but if exists, value is string</span>
+    <span class="n">opt2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>  <span class="c1"># always exists, but may have null value</span>
+</pre></div>
+</div>
+<p>These syntaxes would require Python grammar changes and it is not
+believed that marking TypedDict items as required or potentially-missing
+would meet the high bar required to make such grammar changes.</p>
+<p>Also, “let’s just not put funny syntax before the colon.” <a class="footnote-reference brackets" href="#id3" id="id1">1</a></p>
+</section>
+<section id="marking-required-or-potentially-missing-keys-with-an-operator">
+<h3><a class="toc-backref" href="#marking-required-or-potentially-missing-keys-with-an-operator">Marking required or potentially-missing keys with an operator</a></h3>
+<p>We could use unary <code class="docutils literal notranslate"><span class="pre">+</span></code> as shorthand to mark a required key, unary
+<code class="docutils literal notranslate"><span class="pre">-</span></code> to mark a potentially-missing key, or unary <code class="docutils literal notranslate"><span class="pre">~</span></code> to mark a key
+with opposite-of-normal totality:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyThing</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">req1</span><span class="p">:</span> <span class="o">+</span><span class="nb">int</span>    <span class="c1"># + means a required key, or Required[...]</span>
+    <span class="n">opt1</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">req2</span><span class="p">:</span> <span class="o">+</span><span class="nb">float</span>
+
+<span class="k">class</span> <span class="nc">MyThing</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">req1</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">opt1</span><span class="p">:</span> <span class="o">-</span><span class="nb">str</span>    <span class="c1"># - means a potentially-missing key, or NotRequired[...]</span>
+    <span class="n">req2</span><span class="p">:</span> <span class="nb">float</span>
+
+<span class="k">class</span> <span class="nc">MyThing</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">req1</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">opt1</span><span class="p">:</span> <span class="o">~</span><span class="nb">str</span>    <span class="c1"># ~ means a opposite-of-normal-totality key</span>
+    <span class="n">req2</span><span class="p">:</span> <span class="nb">float</span>
+</pre></div>
+</div>
+<p>Such operators could be implemented on <code class="docutils literal notranslate"><span class="pre">type</span></code> via the <code class="docutils literal notranslate"><span class="pre">__pos__</span></code>,
+<code class="docutils literal notranslate"><span class="pre">__neg__</span></code> and <code class="docutils literal notranslate"><span class="pre">__invert__</span></code> special methods without modifying the
+grammar.</p>
+<p>It was decided that it would be prudent to introduce longform syntax
+(i.e. <code class="docutils literal notranslate"><span class="pre">Required[...]</span></code> and <code class="docutils literal notranslate"><span class="pre">NotRequired[...]</span></code>) before introducing
+any shortform syntax. Future PEPs may reconsider introducing this
+or other shortform syntax options.</p>
+</section>
+<section id="marking-absence-of-a-value-with-a-special-constant">
+<h3><a class="toc-backref" href="#marking-absence-of-a-value-with-a-special-constant">Marking absence of a value with a special constant</a></h3>
+<p>We could introduce a new type-level constant which signals the absence
+of a value when used as a union member, similar to JavaScript’s
+<code class="docutils literal notranslate"><span class="pre">undefined</span></code> type, perhaps called <code class="docutils literal notranslate"><span class="pre">Missing</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyThing</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">req1</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">opt1</span><span class="p">:</span> <span class="nb">str</span><span class="o">|</span><span class="n">Missing</span>
+    <span class="n">req2</span><span class="p">:</span> <span class="nb">float</span>
+</pre></div>
+</div>
+<p>Such a <code class="docutils literal notranslate"><span class="pre">Missing</span></code> constant could also be used for other scenarios such
+as the type of a variable which is only conditionally defined:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyClass</span><span class="p">:</span>
+    <span class="n">attr</span><span class="p">:</span> <span class="nb">int</span><span class="o">|</span><span class="n">Missing</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">set_attr</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">set_attr</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attr</span> <span class="o">=</span> <span class="mi">10</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">set_attr</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">set_attr</span><span class="p">:</span>
+        <span class="n">attr</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>  <span class="c1"># int|Missing</span>
+</pre></div>
+</div>
+<section id="misalignment-with-how-unions-apply-to-values">
+<h4><a class="toc-backref" href="#misalignment-with-how-unions-apply-to-values">Misalignment with how unions apply to values</a></h4>
+<p>However this use of <code class="docutils literal notranslate"><span class="pre">...|Missing</span></code>, equivalent to
+<code class="docutils literal notranslate"><span class="pre">Union[...,</span> <span class="pre">Missing]</span></code>, doesn’t align well with what a union normally
+means: <code class="docutils literal notranslate"><span class="pre">Union[...]</span></code> always describes the type of a <em>value</em> that is
+present. By contrast missingness or non-totality is a property of a
+<em>variable</em> instead. Current precedent for marking properties of a
+variable include <code class="docutils literal notranslate"><span class="pre">Final[...]</span></code> and <code class="docutils literal notranslate"><span class="pre">ClassVar[...]</span></code>, which the
+proposal for <code class="docutils literal notranslate"><span class="pre">Required[...]</span></code> is aligned with.</p>
+</section>
+<section id="misalignment-with-how-unions-are-subdivided">
+<h4><a class="toc-backref" href="#misalignment-with-how-unions-are-subdivided">Misalignment with how unions are subdivided</a></h4>
+<p>Furthermore the use of <code class="docutils literal notranslate"><span class="pre">Union[...,</span> <span class="pre">Missing]</span></code> doesn’t align with the
+usual ways that union values are broken down: Normally you can eliminate
+components of a union type using <code class="docutils literal notranslate"><span class="pre">isinstance</span></code> checks:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Packet</span><span class="p">:</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">send_data</span><span class="p">(</span><span class="n">packet</span><span class="p">:</span> <span class="n">Packet</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">packet</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">packet</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># str</span>
+        <span class="n">packet_bytes</span> <span class="o">=</span> <span class="n">packet</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">packet</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># bytes</span>
+        <span class="n">packet_bytes</span> <span class="o">=</span> <span class="n">packet</span><span class="o">.</span><span class="n">data</span>
+    <span class="n">socket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">packet_bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>However if we were to allow <code class="docutils literal notranslate"><span class="pre">Union[...,</span> <span class="pre">Missing]</span></code> you’d either have to
+eliminate the <code class="docutils literal notranslate"><span class="pre">Missing</span></code> case with <code class="docutils literal notranslate"><span class="pre">hasattr</span></code> for object attributes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Packet</span><span class="p">:</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Missing</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">send_data</span><span class="p">(</span><span class="n">packet</span><span class="p">:</span> <span class="n">Packet</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">packet</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">):</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">packet</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># str</span>
+        <span class="n">packet_bytes</span> <span class="o">=</span> <span class="n">packet</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">packet</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># Missing? error?</span>
+        <span class="n">packet_bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span>
+    <span class="n">socket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">packet_bytes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>or a check against <code class="docutils literal notranslate"><span class="pre">locals()</span></code> for local variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">send_data</span><span class="p">(</span><span class="n">packet_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">packet_bytes</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Missing</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">packet_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">packet_bytes</span> <span class="o">=</span> <span class="n">packet</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s1">&#39;packet_bytes&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">packet_bytes</span><span class="p">)</span>  <span class="c1"># bytes</span>
+        <span class="n">socket</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">packet_bytes</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">reveal_type</span><span class="p">(</span><span class="n">packet_bytes</span><span class="p">)</span>  <span class="c1"># Missing? error?</span>
+</pre></div>
+</div>
+<p>or a check via other means, such as against <code class="docutils literal notranslate"><span class="pre">globals()</span></code> for global
+variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">warning</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Missing</span><span class="p">]</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">):</span>
+    <span class="n">warning</span> <span class="o">=</span> <span class="s1">&#39;Your version of Python is unsupported!&#39;</span>
+
+<span class="k">if</span> <span class="s1">&#39;warning&#39;</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">():</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span>  <span class="c1"># str</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">reveal_type</span><span class="p">(</span><span class="n">warning</span><span class="p">)</span>  <span class="c1"># Missing? error?</span>
+</pre></div>
+</div>
+<p>Weird and inconsistent. <code class="docutils literal notranslate"><span class="pre">Missing</span></code> is not really a value at all; it’s
+an absence of definition and such an absence should be treated
+specially.</p>
+</section>
+<section id="difficult-to-implement">
+<h4><a class="toc-backref" href="#difficult-to-implement">Difficult to implement</a></h4>
+<p>Eric Traut from the Pyright type checker team has stated that
+implementing a <code class="docutils literal notranslate"><span class="pre">Union[...,</span> <span class="pre">Missing]</span></code>-style syntax would be
+difficult. <a class="footnote-reference brackets" href="#id4" id="id2">2</a></p>
+</section>
+<section id="introduces-a-second-null-like-value-into-python">
+<h4><a class="toc-backref" href="#introduces-a-second-null-like-value-into-python">Introduces a second null-like value into Python</a></h4>
+<p>Defining a new <code class="docutils literal notranslate"><span class="pre">Missing</span></code> type-level constant would be very close to
+introducing a new <code class="docutils literal notranslate"><span class="pre">Missing</span></code> value-level constant at runtime, creating
+a second null-like runtime value in addition to <code class="docutils literal notranslate"><span class="pre">None</span></code>. Having two
+different null-like constants in Python (<code class="docutils literal notranslate"><span class="pre">None</span></code> and <code class="docutils literal notranslate"><span class="pre">Missing</span></code>) would
+be confusing. Many newcomers to JavaScript already have difficulty
+distinguishing between its analogous constants <code class="docutils literal notranslate"><span class="pre">null</span></code> and
+<code class="docutils literal notranslate"><span class="pre">undefined</span></code>.</p>
+</section>
+</section>
+<section id="replace-optional-with-nullable-repurpose-optional-to-mean-optional-item">
+<h3><a class="toc-backref" href="#replace-optional-with-nullable-repurpose-optional-to-mean-optional-item">Replace Optional with Nullable. Repurpose Optional to mean “optional item”.</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Optional[...]</span></code> is too ubiquitous to deprecate. Although use of it
+<em>may</em> fade over time in favor of the <code class="docutils literal notranslate"><span class="pre">T|None</span></code> syntax specified by <a class="reference external" href="https://www.python.org/dev/peps/pep-0604/">PEP
+604</a>.</p>
+</section>
+<section id="change-optional-to-mean-optional-item-in-certain-contexts-instead-of-nullable">
+<h3><a class="toc-backref" href="#change-optional-to-mean-optional-item-in-certain-contexts-instead-of-nullable">Change Optional to mean “optional item” in certain contexts instead of “nullable”</a></h3>
+<p>Consider the use of a special flag on a TypedDict definition to alter
+the interpretation of <code class="docutils literal notranslate"><span class="pre">Optional</span></code> inside the TypedDict to mean
+“optional item” rather than its usual meaning of “nullable”:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyThing</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">optional_as_missing</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">req1</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">opt1</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyThing</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">optional_as_nullable</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">req1</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">opt1</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This would add more confusion for users because it would mean that in
+<em>some</em> contexts the meaning of <code class="docutils literal notranslate"><span class="pre">Optional[...]</span></code> is different than in
+other contexts, and it would be easy to overlook the flag.</p>
+</section>
+<section id="various-synonyms-for-potentially-missing-item">
+<h3><a class="toc-backref" href="#various-synonyms-for-potentially-missing-item">Various synonyms for “potentially-missing item”</a></h3>
+<ul class="simple">
+<li>Omittable – too easy to confuse with optional</li>
+<li>OptionalItem, OptionalKey – two words; too easy to confuse with
+optional</li>
+<li>MayExist, MissingOk – two words</li>
+<li>Droppable – too similar to Rust’s <code class="docutils literal notranslate"><span class="pre">Drop</span></code>, which means something
+different</li>
+<li>Potential – too vague</li>
+<li>Open – sounds like applies to an entire structure rather then to an
+item</li>
+<li>Excludable</li>
+<li>Checked</li>
+</ul>
+</section>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/archives/list/typing-sig&#64;python.org/message/4I3GPIWDUKV6GUCHDMORGUGRE4F4SXGR/">https://mail.python.org/archives/list/typing-sig&#64;python.org/message/4I3GPIWDUKV6GUCHDMORGUGRE4F4SXGR/</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/archives/list/typing-sig&#64;python.org/message/S2VJSVG6WCIWPBZ54BOJPG56KXVSLZK6/">https://mail.python.org/archives/list/typing-sig&#64;python.org/message/S2VJSVG6WCIWPBZ54BOJPG56KXVSLZK6/</a></dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0655.rst">https://github.com/python/peps/blob/master/pep-0655.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0655.rst">2021-10-08 21:24:19 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 655 – Marking individual TypedDict items as required or potentially-missing</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#special-syntax-around-the-key-of-a-typeddict-item">Special syntax around the <em>key</em> of a TypedDict item</a></li>
+<li><a class="reference internal" href="#marking-required-or-potentially-missing-keys-with-an-operator">Marking required or potentially-missing keys with an operator</a></li>
+<li><a class="reference internal" href="#marking-absence-of-a-value-with-a-special-constant">Marking absence of a value with a special constant</a><ul>
+<li><a class="reference internal" href="#misalignment-with-how-unions-apply-to-values">Misalignment with how unions apply to values</a></li>
+<li><a class="reference internal" href="#misalignment-with-how-unions-are-subdivided">Misalignment with how unions are subdivided</a></li>
+<li><a class="reference internal" href="#difficult-to-implement">Difficult to implement</a></li>
+<li><a class="reference internal" href="#introduces-a-second-null-like-value-into-python">Introduces a second null-like value into Python</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#replace-optional-with-nullable-repurpose-optional-to-mean-optional-item">Replace Optional with Nullable. Repurpose Optional to mean “optional item”.</a></li>
+<li><a class="reference internal" href="#change-optional-to-mean-optional-item-in-certain-contexts-instead-of-nullable">Change Optional to mean “optional item” in certain contexts instead of “nullable”</a></li>
+<li><a class="reference internal" href="#various-synonyms-for-potentially-missing-item">Various synonyms for “potentially-missing item”</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0655.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

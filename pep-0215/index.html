@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 215 – String Interpolation | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 215 – String Interpolation</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 215 – String Interpolation</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">215</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">String Interpolation</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">ping&#32;&#97;t&#32;zesty.ca (Ka-Ping Yee)</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Superseded</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">24-Jul-2000</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.1</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+<dt class="field-odd">Superseded-By</dt>
+<dd class="field-odd"><a class="reference external" href="../pep-0292">292</a></dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#security-issues">Security Issues</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>This document proposes a string interpolation feature for Python
+to allow easier string formatting.  The suggested syntax change
+is the introduction of a ‘$’ prefix that triggers the special
+interpretation of the ‘$’ character within a string, in a manner
+reminiscent to the variable interpolation found in Unix shells,
+awk, Perl, or Tcl.</p>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document is in the public domain.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification">Specification</a></h2>
+<p>Strings may be preceded with a ‘$’ prefix that comes before the
+leading single or double quotation mark (or triplet) and before
+any of the other string prefixes (‘r’ or ‘u’).  Such a string is
+processed for interpolation after the normal interpretation of
+backslash-escapes in its contents.  The processing occurs just
+before the string is pushed onto the value stack, each time the
+string is pushed.  In short, Python behaves exactly as if ‘$’
+were a unary operator applied to the string.  The operation
+performed is as follows:</p>
+<p>The string is scanned from start to end for the ‘$’ character
+(<code class="docutils literal notranslate"><span class="pre">\x24</span></code> in 8-bit strings or <code class="docutils literal notranslate"><span class="pre">\u0024</span></code> in Unicode strings).  If there
+are no ‘$’ characters present, the string is returned unchanged.</p>
+<p>Any ‘$’ found in the string, followed by one of the two kinds of
+expressions described below, is replaced with the value of the
+expression as evaluated in the current namespaces.  The value is
+converted with <code class="docutils literal notranslate"><span class="pre">str()</span></code> if the containing string is an 8-bit string,
+or with <code class="docutils literal notranslate"><span class="pre">unicode()</span></code> if it is a Unicode string.</p>
+<ol class="arabic simple">
+<li>A Python identifier optionally followed by any number of
+trailers, where a trailer consists of:
+- a dot and an identifier,
+- an expression enclosed in square brackets, or
+- an argument list enclosed in parentheses
+(This is exactly the pattern expressed in the Python grammar
+by “<code class="docutils literal notranslate"><span class="pre">NAME</span> <span class="pre">trailer*</span></code>”, using the definitions in <code class="docutils literal notranslate"><span class="pre">Grammar/Grammar</span></code>.)</li>
+<li>Any complete Python expression enclosed in curly braces.</li>
+</ol>
+<p>Two dollar-signs (“$$”) are replaced with a single “$”.</p>
+</section>
+<section id="examples">
+<h2><a class="toc-backref" href="#examples">Examples</a></h2>
+<p>Here is an example of an interactive session exhibiting the
+expected behaviour of this feature.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&gt;&gt;&gt; a, b = 5, 6
+&gt;&gt;&gt; print $&#39;a = $a, b = $b&#39;
+a = 5, b = 6
+&gt;&gt;&gt; $u&#39;uni${a}ode&#39;
+u&#39;uni5ode&#39;
+&gt;&gt;&gt; print $&#39;\$a&#39;
+5
+&gt;&gt;&gt; print $r&#39;\$a&#39;
+\5
+&gt;&gt;&gt; print $&#39;$$$a.$b&#39;
+$5.6
+&gt;&gt;&gt; print $&#39;a + b = ${a + b}&#39;
+a + b = 11
+&gt;&gt;&gt; import sys
+&gt;&gt;&gt; print $&#39;References to $a: $sys.getrefcount(a)&#39;
+References to 5: 15
+&gt;&gt;&gt; print $&quot;sys = $sys, sys = $sys.modules[&#39;sys&#39;]&quot;
+sys = &lt;module &#39;sys&#39; (built-in)&gt;, sys = &lt;module &#39;sys&#39; (built-in)&gt;
+&gt;&gt;&gt; print $&#39;BDFL = $sys.copyright.split()[4].upper()&#39;
+BDFL = GUIDO
+</pre></div>
+</div>
+</section>
+<section id="discussion">
+<h2><a class="toc-backref" href="#discussion">Discussion</a></h2>
+<p>‘$’ is chosen as the interpolation character within the
+string for the sake of familiarity, since it is already used
+for this purpose in many other languages and contexts.</p>
+<p>It is then natural to choose ‘$’ as a prefix, since it is a
+mnemonic for the interpolation character.</p>
+<p>Trailers are permitted to give this interpolation mechanism
+even more power than the interpolation available in most other
+languages, while the expression to be interpolated remains
+clearly visible and free of curly braces.</p>
+<p>‘$’ works like an operator and could be implemented as an
+operator, but that prevents the compile-time optimization
+and presents security issues.  So, it is only allowed as a
+string prefix.</p>
+</section>
+<section id="security-issues">
+<h2><a class="toc-backref" href="#security-issues">Security Issues</a></h2>
+<p>“$” has the power to eval, but only to eval a literal.  As
+described here (a string prefix rather than an operator), it
+introduces no new security issues since the expressions to be
+evaluated must be literally present in the code.</p>
+</section>
+<section id="implementation">
+<h2><a class="toc-backref" href="#implementation">Implementation</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Itpl</span></code> module at <a class="footnote-reference brackets" href="#id2" id="id1">1</a> provides a
+prototype of this feature.  It uses the <code class="docutils literal notranslate"><span class="pre">tokenize</span></code> module to find
+the end of an expression to be interpolated, then calls <code class="docutils literal notranslate"><span class="pre">eval()</span></code>
+on the expression each time a value is needed.  In the prototype,
+the expression is parsed and compiled again each time it is
+evaluated.</p>
+<p>As an optimization, interpolated strings could be compiled
+directly into the corresponding bytecode; that is,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$&#39;a = $a, b = $b&#39;
+</pre></div>
+</div>
+<p>could be compiled as though it were the expression</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="s1">&#39;a = &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;, b = &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>so that it only needs to be compiled once.</p>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="http://www.lfw.org/python/Itpl.py">http://www.lfw.org/python/Itpl.py</a></dd>
+</dl>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0215.txt">https://github.com/python/peps/blob/master/pep-0215.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0215.txt">2017-11-11 19:28:55 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 215 – String Interpolation</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#discussion">Discussion</a></li>
+<li><a class="reference internal" href="#security-issues">Security Issues</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0215.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

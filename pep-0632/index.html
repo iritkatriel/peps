@@ -1,0 +1,323 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 632 – Deprecate distutils module | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 632 – Deprecate distutils module</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 632 – Deprecate distutils module</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">632</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Deprecate distutils module</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Steve Dower &lt;steve.dower&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="https://discuss.python.org/t/pep-632-deprecate-distutils-module/5134">https://discuss.python.org/t/pep-632-deprecate-distutils-module/5134</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Accepted</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Standards Track</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">03-Sep-2020</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.10</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">03-Sep-2020, 22-Jan-2021</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/archives/list/python-dev&#64;python.org/thread/TXU6TVOMBLQU3SV57DMMOA5Y2E67AW7P/">https://mail.python.org/archives/list/python-dev&#64;python.org/thread/TXU6TVOMBLQU3SV57DMMOA5Y2E67AW7P/</a></dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#migration-advice">Migration Advice</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#deprecate-but-do-not-delete">Deprecate but do not delete</a></li>
+<li><a class="reference internal" href="#only-deprecate-the-setuptools-like-functionality">Only deprecate the setuptools-like functionality</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>The distutils module <a class="footnote-reference brackets" href="#id12" id="id1">1</a> has for a long time recommended using the
+setuptools package <a class="footnote-reference brackets" href="#id13" id="id2">2</a> instead. Setuptools has recently integrated a
+complete copy of distutils and is no longer dependent on the standard
+library <a class="footnote-reference brackets" href="#id14" id="id3">3</a>. Pip has been silently replacing distutils with
+setuptools when installing packages for a long time already, and the
+distutils documentation has stated that it is being phased out since
+2014 (or earlier). It is time to remove it from the standard library.</p>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#motivation">Motivation</a></h2>
+<p>distutils <a class="footnote-reference brackets" href="#id12" id="id4">1</a> is a largely undocumented and unmaintained collection
+of utilities for packaging and distributing Python packages, including
+compilation of native extension modules. It defines a configuration
+format that describes a Python distribution and provides the tools to
+convert a directory of source code into a source distribution, and
+some forms of binary distribution. Because of its place in the
+standard library, many updates can only be released with a major
+release, and users cannot rely on particular fixes being available.</p>
+<p>setuptools <a class="footnote-reference brackets" href="#id13" id="id5">2</a> is a better documented and well maintained enhancement
+based on distutils. While it provides very similar functionality, it
+is much better able to support users on earlier Python releases, and
+can respond to bug reports more quickly. A number of platform-specific
+enhancements already exist in setuptools that have not been added to
+distutils, and there is been a long-standing recommendation in the
+distutils documentation to prefer setuptools.</p>
+<p>Historically, setuptools has extended distutils using subclassing and
+monkeypatching, but has now taken a copy of the underlying code. <a class="footnote-reference brackets" href="#id14" id="id6">3</a>
+As a result, the second last major dependency on distutils is gone and
+there is no need to keep it in the standard library.</p>
+<p>The final dependency on distutils is CPython itself, which uses it to
+build native extension modules in the standard library (except on
+Windows). Because this is a CPython build-time dependency, it is
+possible to continue to use distutils for this specific case without
+it being part of the standard library.</p>
+<p>Deprecation and removal will make it obvious that issues should be
+fixed in the setuptools project, and will reduce a source of bug
+reports and unnecessary test maintenance. It will also help promote
+the development of alternative build backends, which can now be
+supported more easily thanks to <a class="reference external" href="../pep-0517">PEP 517</a>. <a class="footnote-reference brackets" href="#id15" id="id7">4</a></p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification">Specification</a></h2>
+<p>In Python 3.10 and 3.11, distutils will be formally marked as
+deprecated. All known issues will be closed at this time.
+<code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">distutils</span></code> will raise a deprecation warning. New issues that
+would be considered release blocking may still be fixed, but support
+for new tools or platforms will not be added.</p>
+<p>During Python 3.10 and 3.11, uses of distutils within the standard
+library may change to use alternative APIs.</p>
+<p>In Python 3.12, distutils will no longer be installed by <code class="docutils literal notranslate"><span class="pre">make</span>
+<span class="pre">install</span></code> or any of the first-party distribution. Third-party
+redistributors should no longer include distutils in their bundles or
+repositories.</p>
+<p>This PEP makes no specification on migrating the parts of the CPython
+build process that currently use distutils. Depending on
+contributions, this migration may occur at any time.</p>
+<p>After Python 3.12 is started and when the CPython build process no
+longer depends on distutils being in the standard library, the entire
+<code class="docutils literal notranslate"><span class="pre">Lib/distutils</span></code> directory and <code class="docutils literal notranslate"><span class="pre">Lib/test/test_distutils.py</span></code> file
+will be removed from the repository.</p>
+<p>Other references to distutils will be cleaned up. As of Python 3.9’s
+initial release, the following modules have references in code or
+comments:</p>
+<ul class="simple">
+<li>Lib/ctypes/util.py</li>
+<li>Lib/site.py</li>
+<li>Lib/sysconfig.py</li>
+<li>Lib/_aix_support.py</li>
+<li>Lib/_bootsubprocess.py</li>
+<li>Lib/_osx_support.py</li>
+<li>Modules/_decimal/tests/formathelper.py</li>
+</ul>
+<p>The following Tools in CPython also refer to distutils. Note that none
+of these are installed with CPython:</p>
+<ul class="simple">
+<li>PC/layout (references will be removed)</li>
+<li>Tools/msi (references will be removed)</li>
+<li>Tools/peg_generator (will be adapted to a different build tool)</li>
+<li>Tools/test2to3 (example project will be removed)</li>
+</ul>
+<p>As the distutils code is already included in setuptools, there is no
+need to republish it in any other form. Those who require access to
+the functionality should use setuptools or an alternative build
+backend.</p>
+</section>
+<section id="backwards-compatibility">
+<h2><a class="toc-backref" href="#backwards-compatibility">Backwards Compatibility</a></h2>
+<p>Code that imports distutils will no longer work from Python 3.12.</p>
+<p>The suggested migration path is to use the equivalent (though not
+identical) imports from setuptools (see <a class="footnote-reference brackets" href="#id16" id="id8">5</a>), or to migrate to an
+alternative build backend (see <a class="reference external" href="../pep-0517">PEP 517</a> <a class="footnote-reference brackets" href="#id15" id="id9">4</a>).</p>
+<p>Code already exists in setuptools to transparently switch <code class="docutils literal notranslate"><span class="pre">setup.py</span></code>
+files using distutils onto their equivalents, and so most working
+build scripts are already known to work with setuptools. Such scripts
+may need to update their import statements. Consult the setuptools
+documentation for specific migration advice. <a class="footnote-reference brackets" href="#id16" id="id10">5</a></p>
+<p>Some projects use alternate sets of patches over distutils, notably,
+numpy.distutils. <a class="footnote-reference brackets" href="#id17" id="id11">6</a> Projects that we know are doing this have been
+informed.</p>
+<p>Many build scripts use custom commands or narrowly scoped patches. As
+these packages are already subject to setuptools overriding distutils,
+we expect minimal disruption as a result of distutils being removed.
+Scripts may still need to be updated to avoid importing distutils.</p>
+</section>
+<section id="reference-implementation">
+<h2><a class="toc-backref" href="#reference-implementation">Reference Implementation</a></h2>
+<p>setuptools version 48 includes the complete copy of distutils, and as
+such is no longer dependent on the standard library’s copy. Most
+implementation issues they have faced are due to the continuing
+existence of distutils in the standard library, and so removal will
+improve the stability of their implementation.</p>
+<p>There is not yet a reference implementation for the removal of
+distutils from the standard library, nor is there an implementation
+for CPython’s native module builds without relying on the standard
+library copy of distutils.</p>
+</section>
+<section id="migration-advice">
+<h2><a class="toc-backref" href="#migration-advice">Migration Advice</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This section suggests some alternative replacements for popular
+functionality that is being formally deprecated with this PEP. It
+is current at time of writing, but is not kept up to date.</p>
+</div>
+<p>For these modules or types, <code class="docutils literal notranslate"><span class="pre">setuptools</span></code> is the best substitute:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">distutils.ccompiler</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.cmd.Command</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.command</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.config</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.core.Distribution</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.errors</span></code></li>
+</ul>
+<p>For these modules or types, use the standards-defined Python Packaging
+Authority packages specified:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">distutils.version</span></code> — use the <code class="docutils literal notranslate"><span class="pre">packaging</span></code> package</li>
+</ul>
+<p>For these modules or functions, use the standard library module shown:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">distutils.fancy_getopt</span></code> — use the <code class="docutils literal notranslate"><span class="pre">argparse</span></code> module</li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.spawn.find_executable</span></code> — use the <code class="docutils literal notranslate"><span class="pre">shutil.which</span></code> function</li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.spawn.spawn</span></code> — use the <code class="docutils literal notranslate"><span class="pre">subprocess.run</span></code> function</li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.sysconfig</span></code> — use the <code class="docutils literal notranslate"><span class="pre">sysconfig</span></code> module</li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.util.get_platform</span></code> — use the <code class="docutils literal notranslate"><span class="pre">platform</span></code> module</li>
+</ul>
+<p>For these functions, and any others not mentioned here, you will need
+to reimplement the functionality yourself. The legacy documentation
+can be found at <a class="reference external" href="https://docs.python.org/3.9/distutils/apiref.html">https://docs.python.org/3.9/distutils/apiref.html</a></p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">distutils.dir_util.create_tree</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.util.change_root</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">distutils.util.strtobool</span></code></li>
+</ul>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#rejected-ideas">Rejected Ideas</a></h2>
+<section id="deprecate-but-do-not-delete">
+<h3><a class="toc-backref" href="#deprecate-but-do-not-delete">Deprecate but do not delete</a></h3>
+<p>The primary concern with this approach is that distutils most
+frequently breaks because of platform differences, which means that
+without maintenance, it will stop working out-of-sync with any
+Python release. This makes it impossible for libraries to reliably
+detect when they will stop working.</p>
+<p>In contrast, this PEP proposes a concrete date, known well in advance,
+when distutils will stop working, and commits to not breaking the API
+before that time. This gives maintainers a predictable schedule,
+ensures any breakage occurs at a point where users will already be
+expecting changed behavior, and provides a reliable detection
+mechanism (specifically, that <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">distutils</span></code> raises).</p>
+<p>Finally, as long as distutils remains in the standard library in any
+form, it will interfere with third-party packages that provide shims
+or replacements, including setuptools. Completely removing the
+package at a known version makes it possible for third-parties to
+safely use a substitute.</p>
+</section>
+<section id="only-deprecate-the-setuptools-like-functionality">
+<h3><a class="toc-backref" href="#only-deprecate-the-setuptools-like-functionality">Only deprecate the setuptools-like functionality</a></h3>
+<p>This suggestion assumes that there exists a volunteer to maintain
+whatever is left, which is not true. It also implies that anybody
+knows which functionality should remain, which as seen in the
+discussions is not at all clear.</p>
+<p>Most helper functions in distutils already have supported (and
+improved) alternatives, often in the standard library, and there is
+little that can be done to the legacy versions without breaking
+compatibility. (And any break requiring maintainers to update their
+code is essentially equivalent to requiring them to import a different
+function.)</p>
+<p>The last point from the previous section also applies here.</p>
+</section>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id12"><span class="brackets">1</span><span class='fn-backref''><em> (<a href='#id1'>1</a>, <a href='#id4'>2</a>) </em></span></dt>
+<dd>distutils - Building and installing Python modules
+(<a class="reference external" href="https://docs.python.org/3.9/library/distutils.html">https://docs.python.org/3.9/library/distutils.html</a>)</dd>
+<dt class="label" id="id13"><span class="brackets">2</span><span class='fn-backref''><em> (<a href='#id2'>1</a>, <a href='#id5'>2</a>) </em></span></dt>
+<dd>setuptools - PyPI
+(<a class="reference external" href="https://pypi.org/project/setuptools/">https://pypi.org/project/setuptools/</a>)</dd>
+<dt class="label" id="id14"><span class="brackets">3</span><span class='fn-backref''><em> (<a href='#id3'>1</a>, <a href='#id6'>2</a>) </em></span></dt>
+<dd>setuptools Issue #417 - Adopt distutils
+(<a class="reference external" href="https://github.com/pypa/setuptools/issues/417">https://github.com/pypa/setuptools/issues/417</a>)</dd>
+<dt class="label" id="id15"><span class="brackets">4</span><span class='fn-backref''><em> (<a href='#id7'>1</a>, <a href='#id9'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="../pep-0517">PEP 517</a> - A build-system independent format for source trees
+(<a class="reference external" href="https://www.python.org/dev/peps/pep-0517/">https://www.python.org/dev/peps/pep-0517/</a>)</dd>
+<dt class="label" id="id16"><span class="brackets">5</span><span class='fn-backref''><em> (<a href='#id8'>1</a>, <a href='#id10'>2</a>) </em></span></dt>
+<dd>Porting from Distutils
+(<a class="reference external" href="https://setuptools.readthedocs.io/en/latest/deprecated/distutils-legacy.html">https://setuptools.readthedocs.io/en/latest/deprecated/distutils-legacy.html</a>)</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id11">6</a></span></dt>
+<dd>Packaging (numpy.distutils)
+(<a class="reference external" href="https://numpy.org/doc/stable/reference/distutils.html">https://numpy.org/doc/stable/reference/distutils.html</a>)</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0632.rst">https://github.com/python/peps/blob/master/pep-0632.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0632.rst">2021-06-12 15:06:50 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 632 – Deprecate distutils module</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#migration-advice">Migration Advice</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#deprecate-but-do-not-delete">Deprecate but do not delete</a></li>
+<li><a class="reference internal" href="#only-deprecate-the-setuptools-like-functionality">Only deprecate the setuptools-like functionality</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0632.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

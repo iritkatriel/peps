@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 404 – Python 2.8 Un-release Schedule | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 404 – Python 2.8 Un-release Schedule</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 404 – Python 2.8 Un-release Schedule</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">404</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Python 2.8 Un-release Schedule</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">09-Nov-2011</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.8</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#un-release-manager-and-crew">Un-release Manager and Crew</a></li>
+<li><a class="reference internal" href="#un-release-schedule">Un-release Schedule</a></li>
+<li><a class="reference internal" href="#official-pronouncement">Official pronouncement</a></li>
+<li><a class="reference internal" href="#upgrade-path">Upgrade path</a></li>
+<li><a class="reference internal" href="#and-now-for-something-completely-different">And Now For Something Completely Different</a><ul>
+<li><a class="reference internal" href="#strings-and-bytes">Strings and bytes</a></li>
+<li><a class="reference internal" href="#numbers">Numbers</a></li>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#multiple-spellings">Multiple spellings</a></li>
+<li><a class="reference internal" href="#imports">Imports</a></li>
+<li><a class="reference internal" href="#iterators-and-views">Iterators and views</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>This document describes the un-development and un-release schedule for Python
+2.8.</p>
+</section>
+<section id="un-release-manager-and-crew">
+<h2><a class="toc-backref" href="#un-release-manager-and-crew">Un-release Manager and Crew</a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 61%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head">Position</th>
+<th class="head">Name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td>2.8 Un-release Manager</td>
+<td>Cardinal Biggles</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="un-release-schedule">
+<h2><a class="toc-backref" href="#un-release-schedule">Un-release Schedule</a></h2>
+<p>The current un-schedule is:</p>
+<ul class="simple">
+<li>2.8 final Never</li>
+</ul>
+</section>
+<section id="official-pronouncement">
+<h2><a class="toc-backref" href="#official-pronouncement">Official pronouncement</a></h2>
+<p>Rule number six: there is <em>no</em> official Python 2.8 release.  There never will
+be an official Python 2.8 release.  It is an ex-release.  Python 2.7
+is the end of the Python 2 line of development.</p>
+</section>
+<section id="upgrade-path">
+<h2><a class="toc-backref" href="#upgrade-path">Upgrade path</a></h2>
+<p>The official upgrade path from Python 2.7 is to Python 3.</p>
+</section>
+<section id="and-now-for-something-completely-different">
+<h2><a class="toc-backref" href="#and-now-for-something-completely-different">And Now For Something Completely Different</a></h2>
+<p>In all seriousness, there are important reasons why there won’t be an
+official Python 2.8 release, and why you should plan to migrate
+instead to Python 3.</p>
+<p>Python is (as of this writing) more than 20 years old, and Guido and the
+community have learned a lot in those intervening years.  Guido’s
+original concept for Python 3 was to make changes to the language
+primarily to remove the warts that had grown in the preceding
+versions.  Python 3 was not to be a complete redesign, but instead an
+evolution of the language, and while maintaining full backward
+compatibility with Python 2 was explicitly off-the-table, neither were
+gratuitous changes in syntax or semantics acceptable.  In most cases,
+Python 2 code can be translated fairly easily to Python 3, sometimes
+entirely mechanically by such tools as <a class="reference external" href="http://docs.python.org/library/2to3.html">2to3</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a> (there’s also a non-trivial
+subset of the language that will run without modification on both 2.7 and
+3.x).</p>
+<p>Because maintaining multiple versions of Python is a significant drag
+on the resources of the Python developers, and because the
+improvements to the language and libraries embodied in Python 3 are so
+important, it was decided to end the Python 2 lineage with Python
+2.7.  Thus, all new development occurs in the Python 3 line of
+development, and there will never be an official Python 2.8 release.
+Python 2.7 will however be maintained for longer than the usual period
+of time.</p>
+<p>Here are some highlights of the significant improvements in Python 3.
+You can read in more detail on the <a class="reference external" href="http://docs.python.org/release/3.0.1/whatsnew/3.0.html">differences</a> <a class="footnote-reference brackets" href="#id4" id="id5">2</a> between Python 2 and
+Python 3.  There are also many good guides on <a class="reference external" href="http://python3porting.com/">porting</a> <a class="footnote-reference brackets" href="#id6" id="id7">3</a> from Python 2
+to Python 3.</p>
+<section id="strings-and-bytes">
+<h3><a class="toc-backref" href="#strings-and-bytes">Strings and bytes</a></h3>
+<p>Python 2’s basic original strings are called 8-bit strings, and
+they play a dual role in Python 2 as both ASCII text and as byte
+sequences.  While Python 2 also has a unicode string type, the
+fundamental ambiguity of the core string type, coupled with Python 2’s
+default behavior of supporting automatic coercion from 8-bit strings
+to unicode objects when the two are combined, often leads to
+<code class="docutils literal notranslate"><span class="pre">UnicodeError</span></code>s. Python 3’s standard string type is Unicode based, and
+Python 3 adds a dedicated bytes type, but critically, no automatic coercion
+between bytes and unicode strings is provided. The closest the language gets
+to implicit coercion are a few text-based APIs that assume a default
+encoding (usually UTF-8) if no encoding is explicitly stated. Thus, the core
+interpreter, its I/O libraries, module names, etc. are clear in their
+distinction between unicode strings and bytes.  Python 3’s unicode
+support even extends to the filesystem, so that non-ASCII file names are
+natively supported.</p>
+<p>This string/bytes clarity is often a source of difficulty in
+transitioning existing code to Python 3, because many third party
+libraries and applications are themselves ambiguous in this
+distinction.  Once migrated though, most <code class="docutils literal notranslate"><span class="pre">UnicodeError</span></code>s can be
+eliminated.</p>
+</section>
+<section id="numbers">
+<h3><a class="toc-backref" href="#numbers">Numbers</a></h3>
+<p>Python 2 has two basic integer types, a native machine-sized <code class="docutils literal notranslate"><span class="pre">int</span></code>
+type, and an arbitrary length <code class="docutils literal notranslate"><span class="pre">long</span></code> type.  These have been merged in
+Python 3 into a single <code class="docutils literal notranslate"><span class="pre">int</span></code> type analogous to Python 2’s <code class="docutils literal notranslate"><span class="pre">long</span></code>
+type.</p>
+<p>In addition, integer division now produces floating point numbers for
+non-integer results.</p>
+</section>
+<section id="classes">
+<h3><a class="toc-backref" href="#classes">Classes</a></h3>
+<p>Python 2 has two core class hierarchies, often called <em>classic
+classes</em> and <em>new-style classes</em>.  The latter allow for such things as
+inheriting from the builtin basic types, support descriptor based tools
+like the <code class="docutils literal notranslate"><span class="pre">property</span></code> builtin and provide a generally more sane and coherent
+system for dealing with multiple inheritance.  Python 3 provided the
+opportunity to completely drop support for classic classes, so all classes
+in Python 3 automatically use the new-style semantics (although that’s a
+misnomer now). There is no need to explicitly inherit from <code class="docutils literal notranslate"><span class="pre">object</span></code> or set
+the default metatype to enable them (in fact, setting a default metatype at
+the module level is no longer supported - the default metatype is always
+<code class="docutils literal notranslate"><span class="pre">object</span></code>).</p>
+<p>The mechanism for explicitly specifying a metaclass has also changed to use
+a <code class="docutils literal notranslate"><span class="pre">metaclass</span></code> keyword argument in the class header line rather than a
+<code class="docutils literal notranslate"><span class="pre">__metaclass__</span></code> magic attribute in the class body.</p>
+</section>
+<section id="multiple-spellings">
+<h3><a class="toc-backref" href="#multiple-spellings">Multiple spellings</a></h3>
+<p>There are many cases in Python 2 where multiple spellings of some
+constructs exist, such as <code class="docutils literal notranslate"><span class="pre">repr()</span></code> and <em>backticks</em>, or the two
+inequality operators <code class="docutils literal notranslate"><span class="pre">!=</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code>.  In all cases, Python 3 has chosen
+exactly one spelling and removed the other (e.g. <code class="docutils literal notranslate"><span class="pre">repr()</span></code> and <code class="docutils literal notranslate"><span class="pre">!=</span></code>
+were kept).</p>
+</section>
+<section id="imports">
+<h3><a class="toc-backref" href="#imports">Imports</a></h3>
+<p>In Python 3, implicit relative imports within packages are no longer
+available - only absolute imports and explicit relative imports are
+supported. In addition, star imports (e.g. <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">x</span> <span class="pre">import</span> <span class="pre">*</span></code>) are only
+permitted in module level code.</p>
+<p>Also, some areas of the standard library have been reorganized to make
+the naming scheme more intuitive.  Some rarely used builtins have been
+relocated to standard library modules.</p>
+</section>
+<section id="iterators-and-views">
+<h3><a class="toc-backref" href="#iterators-and-views">Iterators and views</a></h3>
+<p>Many APIs, which in Python 2 returned concrete lists, in Python 3 now
+return iterators or lightweight <em>views</em>.</p>
+</section>
+</section>
+<section id="id1">
+<h2><a class="toc-backref" href="#id1">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/library/2to3.html">http://docs.python.org/library/2to3.html</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id5">2</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/release/3.0.1/whatsnew/3.0.html">http://docs.python.org/release/3.0.1/whatsnew/3.0.html</a></dd>
+<dt class="label" id="id6"><span class="brackets"><a class="fn-backref" href="#id7">3</a></span></dt>
+<dd><a class="reference external" href="http://python3porting.com/">http://python3porting.com/</a></dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0404.txt">https://github.com/python/peps/blob/master/pep-0404.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0404.txt">2021-02-09 16:54:26 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 404 – Python 2.8 Un-release Schedule</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#un-release-manager-and-crew">Un-release Manager and Crew</a></li>
+<li><a class="reference internal" href="#un-release-schedule">Un-release Schedule</a></li>
+<li><a class="reference internal" href="#official-pronouncement">Official pronouncement</a></li>
+<li><a class="reference internal" href="#upgrade-path">Upgrade path</a></li>
+<li><a class="reference internal" href="#and-now-for-something-completely-different">And Now For Something Completely Different</a><ul>
+<li><a class="reference internal" href="#strings-and-bytes">Strings and bytes</a></li>
+<li><a class="reference internal" href="#numbers">Numbers</a></li>
+<li><a class="reference internal" href="#classes">Classes</a></li>
+<li><a class="reference internal" href="#multiple-spellings">Multiple spellings</a></li>
+<li><a class="reference internal" href="#imports">Imports</a></li>
+<li><a class="reference internal" href="#iterators-and-views">Iterators and views</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0404.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

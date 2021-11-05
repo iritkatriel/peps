@@ -1,0 +1,362 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 396 – Module Version Numbers | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 396 – Module Version Numbers</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 396 – Module Version Numbers</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">396</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Module Version Numbers</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">16-Mar-2011</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">2011-04-05</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-rejection">PEP Rejection</a></li>
+<li><a class="reference internal" href="#user-stories">User Stories</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#deriving">Deriving</a><ul>
+<li><a class="reference internal" href="#classic-distutils">Classic distutils</a></li>
+<li><a class="reference internal" href="#distutils2">Distutils2</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pep-376-metadata">PEP 376 metadata</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>Given that it is useful and common to specify version numbers for
+Python modules, and given that different ways of doing this have grown
+organically within the Python community, it is useful to establish
+standard conventions for module authors to adhere to and reference.
+This informational PEP describes best practices for Python module
+authors who want to define the version number of their Python module.</p>
+<p>Conformance with this PEP is optional, however other Python tools
+(such as <code class="docutils literal notranslate"><span class="pre">distutils2</span></code> <a class="footnote-reference brackets" href="#id12" id="id1">1</a>) may be adapted to use the conventions
+defined here.</p>
+</section>
+<section id="pep-rejection">
+<h2><a class="toc-backref" href="#pep-rejection">PEP Rejection</a></h2>
+<p>This PEP was formally rejected on 2021-04-14.  The packaging ecosystem
+has changed significantly in the intervening years since this PEP was
+first written, and APIs such as <code class="docutils literal notranslate"><span class="pre">importlib.metadata.versions()</span></code> <a class="footnote-reference brackets" href="#id22" id="id2">11</a>
+provide for a much better experience.</p>
+</section>
+<section id="user-stories">
+<h2><a class="toc-backref" href="#user-stories">User Stories</a></h2>
+<p>Alice is writing a new module, called <code class="docutils literal notranslate"><span class="pre">alice</span></code>, which she wants to
+share with other Python developers.  <code class="docutils literal notranslate"><span class="pre">alice</span></code> is a simple module and
+lives in one file, <code class="docutils literal notranslate"><span class="pre">alice.py</span></code>.  Alice wants to specify a version
+number so that her users can tell which version they are using.
+Because her module lives entirely in one file, she wants to add the
+version number to that file.</p>
+<p>Bob has written a module called <code class="docutils literal notranslate"><span class="pre">bob</span></code> which he has shared with many
+users.  <code class="docutils literal notranslate"><span class="pre">bob.py</span></code> contains a version number for the convenience of
+his users.  Bob learns about the Cheeseshop <a class="footnote-reference brackets" href="#id13" id="id3">2</a>, and adds some simple
+packaging using classic distutils so that he can upload <em>The Bob
+Bundle</em> to the Cheeseshop.  Because <code class="docutils literal notranslate"><span class="pre">bob.py</span></code> already specifies a
+version number which his users can access programmatically, he wants
+the same API to continue to work even though his users now get it from
+the Cheeseshop.</p>
+<p>Carol maintains several namespace packages, each of which are
+independently developed and distributed.  In order for her users to
+properly specify dependencies on the right versions of her packages,
+she specifies the version numbers in the namespace package’s
+<code class="docutils literal notranslate"><span class="pre">setup.py</span></code> file.  Because Carol wants to have to update one version
+number per package, she specifies the version number in her module and
+has the <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> extract the module version number when she builds
+the <em>sdist</em> archive.</p>
+<p>David maintains a package in the standard library, and also produces
+standalone versions for other versions of Python.  The standard
+library copy defines the version number in the module, and this same
+version number is used for the standalone distributions as well.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>Python modules, both in the standard library and available from third
+parties, have long included version numbers.  There are established
+de facto standards for describing version numbers, and many ad-hoc
+ways have grown organically over the years.  Often, version numbers
+can be retrieved from a module programmatically, by importing the
+module and inspecting an attribute.  Classic Python distutils
+<code class="docutils literal notranslate"><span class="pre">setup()</span></code> functions <a class="footnote-reference brackets" href="#id14" id="id4">3</a> describe a <code class="docutils literal notranslate"><span class="pre">version</span></code> argument where the
+release’s version number can be specified.  <a class="reference external" href="../pep-0008">PEP 8</a> <a class="footnote-reference brackets" href="#id15" id="id5">4</a> describes the
+use of a module attribute called <code class="docutils literal notranslate"><span class="pre">__version__</span></code> for recording
+“Subversion, CVS, or RCS” version strings using keyword expansion.  In
+the PEP author’s own email archives, the earliest example of the use
+of an <code class="docutils literal notranslate"><span class="pre">__version__</span></code> module attribute by independent module
+developers dates back to 1995.</p>
+<p>Another example of version information is the sqlite3 <a class="footnote-reference brackets" href="#id16" id="id6">5</a> module
+with its <code class="docutils literal notranslate"><span class="pre">sqlite_version_info</span></code>, <code class="docutils literal notranslate"><span class="pre">version</span></code>, and <code class="docutils literal notranslate"><span class="pre">version_info</span></code>
+attributes.  It may not be immediately obvious which attribute
+contains a version number for the module, and which contains a version
+number for the underlying SQLite3 library.</p>
+<p>This informational PEP codifies established practice, and recommends
+standard ways of describing module version numbers, along with some
+use cases for when – and when <em>not</em> – to include them.  Its adoption
+by module authors is purely voluntary; packaging tools in the standard
+library will provide optional support for the standards defined
+herein, and other tools in the Python universe may comply as well.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification">Specification</a></h2>
+<ol class="arabic simple">
+<li>In general, modules in the standard library SHOULD NOT have version
+numbers.  They implicitly carry the version number of the Python
+release they are included in.</li>
+<li>On a case-by-case basis, standard library modules which are also
+released in standalone form for other Python versions MAY include a
+module version number when included in the standard library, and
+SHOULD include a version number when packaged separately.</li>
+<li>When a module (or package) includes a version number, the version
+SHOULD be available in the <code class="docutils literal notranslate"><span class="pre">__version__</span></code> attribute.</li>
+<li>For modules which live inside a namespace package, the module
+SHOULD include the <code class="docutils literal notranslate"><span class="pre">__version__</span></code> attribute.  The namespace
+package itself SHOULD NOT include its own <code class="docutils literal notranslate"><span class="pre">__version__</span></code>
+attribute.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">__version__</span></code> attribute’s value SHOULD be a string.</li>
+<li>Module version numbers SHOULD conform to the normalized version
+format specified in <a class="reference external" href="../pep-0386">PEP 386</a> <a class="footnote-reference brackets" href="#id17" id="id7">6</a>.</li>
+<li>Module version numbers SHOULD NOT contain version control system
+supplied revision numbers, or any other semantically different
+version numbers (e.g. underlying library version number).</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">version</span></code> attribute in a classic distutils <code class="docutils literal notranslate"><span class="pre">setup.py</span></code>
+file, or the <a class="reference external" href="../pep-0345">PEP 345</a> <a class="footnote-reference brackets" href="#id18" id="id8">7</a> <code class="docutils literal notranslate"><span class="pre">Version</span></code> metadata field SHOULD be
+derived from the <code class="docutils literal notranslate"><span class="pre">__version__</span></code> field, or vice versa.</li>
+</ol>
+</section>
+<section id="examples">
+<h2><a class="toc-backref" href="#examples">Examples</a></h2>
+<p>Retrieving the version number from a third party package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">bzrlib</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bzrlib</span><span class="o">.</span><span class="n">__version__</span>
+<span class="go">&#39;2.3.0&#39;</span>
+</pre></div>
+</div>
+<p>Retrieving the version number from a standard library package that is
+also distributed as a standalone module:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">email</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">email</span><span class="o">.</span><span class="n">__version__</span>
+<span class="go">&#39;5.1.0&#39;</span>
+</pre></div>
+</div>
+<p>Version numbers for namespace packages:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">flufl.i18n</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">flufl.enum</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">flufl.lock</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="n">flufl</span><span class="o">.</span><span class="n">i18n</span><span class="o">.</span><span class="n">__version__</span>
+<span class="go">1.0.4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="n">flufl</span><span class="o">.</span><span class="n">enum</span><span class="o">.</span><span class="n">__version__</span>
+<span class="go">3.1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span> <span class="n">flufl</span><span class="o">.</span><span class="n">lock</span><span class="o">.</span><span class="n">__version__</span>
+<span class="go">2.1</span>
+
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">flufl</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">flufl</span><span class="o">.</span><span class="n">__version__</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">1</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">AttributeError</span>: <span class="n">&#39;module&#39; object has no attribute &#39;__version__&#39;</span>
+<span class="go">&gt;&gt;&gt;</span>
+</pre></div>
+</div>
+</section>
+<section id="deriving">
+<h2><a class="toc-backref" href="#deriving">Deriving</a></h2>
+<p>Module version numbers can appear in at least two places, and
+sometimes more.  For example, in accordance with this PEP, they are
+available programmatically on the module’s <code class="docutils literal notranslate"><span class="pre">__version__</span></code> attribute.
+In a classic distutils <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> file, the <code class="docutils literal notranslate"><span class="pre">setup()</span></code> function
+takes a <code class="docutils literal notranslate"><span class="pre">version</span></code> argument, while the distutils2 <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> file
+has a <code class="docutils literal notranslate"><span class="pre">version</span></code> key.  The version number must also get into the <a class="reference external" href="../pep-0345">PEP
+345</a> metadata, preferably when the <em>sdist</em> archive is built.  It’s
+desirable for module authors to only have to specify the version
+number once, and have all the other uses derive from this single
+definition.</p>
+<p>This could be done in any number of ways, a few of which are outlined
+below.  These are included for illustrative purposes only and are not
+intended to be definitive, complete, or all-encompassing.  Other
+approaches are possible, and some included below may have limitations
+that prevent their use in some situations.</p>
+<p>Let’s say Elle adds this attribute to her module file <code class="docutils literal notranslate"><span class="pre">elle.py</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;3.1.1&#39;</span>
+</pre></div>
+</div>
+<section id="classic-distutils">
+<h3><a class="toc-backref" href="#classic-distutils">Classic distutils</a></h3>
+<p>In classic distutils, the simplest way to add the version string to
+the <code class="docutils literal notranslate"><span class="pre">setup()</span></code> function in <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> is to do something like
+this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">elle</span> <span class="kn">import</span> <span class="n">__version__</span>
+<span class="n">setup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;elle&#39;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">__version__</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the PEP author’s experience however, this can fail in some cases,
+such as when the module uses automatic Python 3 conversion via the
+<code class="docutils literal notranslate"><span class="pre">2to3</span></code> program (because <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> is executed by Python 3 before
+the <code class="docutils literal notranslate"><span class="pre">elle</span></code> module has been converted).</p>
+<p>In that case, it’s not much more difficult to write a little code to
+parse the <code class="docutils literal notranslate"><span class="pre">__version__</span></code> from the file rather than importing it.
+Without providing too much detail, it’s likely that modules such as
+<code class="docutils literal notranslate"><span class="pre">distutils2</span></code> will provide a way to parse version strings from files.
+E.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">distutils2</span> <span class="kn">import</span> <span class="n">get_version</span>
+<span class="n">setup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;elle&#39;</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">get_version</span><span class="p">(</span><span class="s1">&#39;elle.py&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="distutils2">
+<h3><a class="toc-backref" href="#distutils2">Distutils2</a></h3>
+<p>Because the distutils2 style <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> is declarative, we can’t
+run any code to extract the <code class="docutils literal notranslate"><span class="pre">__version__</span></code> attribute, either via
+import or via parsing.</p>
+<p>In consultation with the distutils-sig <a class="footnote-reference brackets" href="#id20" id="id9">9</a>, two options are
+proposed.  Both entail containing the version number in a file, and
+declaring that file in the <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code>.  When the entire contents of
+the file contains the version number, the <code class="docutils literal notranslate"><span class="pre">version-file</span></code> key will be
+used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">metadata</span><span class="p">]</span>
+<span class="n">version</span><span class="o">-</span><span class="n">file</span><span class="p">:</span> <span class="n">version</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<p>When the version number is contained within a larger file, e.g. of
+Python code, such that the file must be parsed to extract the version,
+the key <code class="docutils literal notranslate"><span class="pre">version-from-file</span></code> will be used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">metadata</span><span class="p">]</span>
+<span class="n">version</span><span class="o">-</span><span class="n">from</span><span class="o">-</span><span class="n">file</span><span class="p">:</span> <span class="n">elle</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>A parsing method similar to that described above will be performed on
+the file named after the colon.  The exact recipe for doing this will
+be discussed in the appropriate distutils2 development forum.</p>
+<p>An alternative is to only define the version number in <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code>
+and use the <code class="docutils literal notranslate"><span class="pre">pkgutil</span></code> module <a class="footnote-reference brackets" href="#id19" id="id10">8</a> to make it available
+programmatically.  E.g. in <code class="docutils literal notranslate"><span class="pre">elle.py</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">distutils2._backport</span> <span class="kn">import</span> <span class="n">pkgutil</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="n">pkgutil</span><span class="o">.</span><span class="n">get_distribution</span><span class="p">(</span><span class="s1">&#39;elle&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="pep-376-metadata">
+<h2><a class="toc-backref" href="#pep-376-metadata">PEP 376 metadata</a></h2>
+<p><a class="reference external" href="../pep-0376">PEP 376</a> <a class="footnote-reference brackets" href="#id21" id="id11">10</a> defines a standard for static metadata, but doesn’t
+describe the process by which this metadata gets created.  It is
+highly desirable for the derived version information to be placed into
+the <a class="reference external" href="../pep-0376">PEP 376</a> <code class="docutils literal notranslate"><span class="pre">.dist-info</span></code> metadata at build-time rather than
+install-time.  This way, the metadata will be available for
+introspection even when the code is not installed.</p>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Distutils2 documentation
+(<a class="reference external" href="http://distutils2.notmyidea.org/">http://distutils2.notmyidea.org/</a>)</dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd>The Cheeseshop (Python Package Index)
+(<a class="reference external" href="http://pypi.python.org">http://pypi.python.org</a>)</dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id4">3</a></span></dt>
+<dd><a class="reference external" href="http://docs.python.org/distutils/setupscript.html">http://docs.python.org/distutils/setupscript.html</a></dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id5">4</a></span></dt>
+<dd><a class="reference external" href="../pep-0008">PEP 8</a>, Style Guide for Python Code
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0008">http://www.python.org/dev/peps/pep-0008</a>)</dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id6">5</a></span></dt>
+<dd>sqlite3 module documentation
+(<a class="reference external" href="http://docs.python.org/library/sqlite3.html">http://docs.python.org/library/sqlite3.html</a>)</dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id7">6</a></span></dt>
+<dd><a class="reference external" href="../pep-0386">PEP 386</a>, Changing the version comparison module in Distutils
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0386/">http://www.python.org/dev/peps/pep-0386/</a>)</dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id8">7</a></span></dt>
+<dd><a class="reference external" href="../pep-0345">PEP 345</a>, Metadata for Python Software Packages 1.2
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0345/#version">http://www.python.org/dev/peps/pep-0345/#version</a>)</dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id10">8</a></span></dt>
+<dd>pkgutil - Package utilities
+(<a class="reference external" href="http://distutils2.notmyidea.org/library/pkgutil.html">http://distutils2.notmyidea.org/library/pkgutil.html</a>)</dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd><a class="reference external" href="https://mail.python.org/pipermail/distutils-sig/2011-June/017862.html">https://mail.python.org/pipermail/distutils-sig/2011-June/017862.html</a></dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id11">10</a></span></dt>
+<dd><a class="reference external" href="../pep-0376">PEP 376</a>, Database of Installed Python Distributions
+(<a class="reference external" href="http://www.python.org/dev/peps/pep-0376/">http://www.python.org/dev/peps/pep-0376/</a>)</dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id2">11</a></span></dt>
+<dd>importlib.metadata
+(<a class="reference external" href="https://docs.python.org/3/library/importlib.metadata.html#distribution-versions">https://docs.python.org/3/library/importlib.metadata.html#distribution-versions</a>)</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0396.txt">https://github.com/python/peps/blob/master/pep-0396.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0396.txt">2021-04-14 22:08:26 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 396 – Module Version Numbers</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#pep-rejection">PEP Rejection</a></li>
+<li><a class="reference internal" href="#user-stories">User Stories</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#deriving">Deriving</a><ul>
+<li><a class="reference internal" href="#classic-distutils">Classic distutils</a></li>
+<li><a class="reference internal" href="#distutils2">Distutils2</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#pep-376-metadata">PEP 376 metadata</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0396.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

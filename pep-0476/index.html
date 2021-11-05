@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 476 – Enabling certificate verification by default for stdlib http clients | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 476 – Enabling certificate verification by default for stdlib http clients</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 476 – Enabling certificate verification by default for stdlib http clients</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">476</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Enabling certificate verification by default for stdlib http clients</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Alex Gaynor &lt;alex.gaynor&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">28-Aug-2014</dd>
+<dt class="field-odd">Resolution</dt>
+<dd class="field-odd"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2014-October/136676.html">https://mail.python.org/pipermail/python-dev/2014-October/136676.html</a></dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#technical-details">Technical Details</a><ul>
+<li><a class="reference internal" href="#trust-database">Trust database</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards compatibility</a></li>
+<li><a class="reference internal" href="#opting-out">Opting out</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#other-protocols">Other protocols</a></li>
+<li><a class="reference internal" href="#python-versions">Python Versions</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>Currently when a standard library http client (the <code class="docutils literal notranslate"><span class="pre">urllib</span></code>, <code class="docutils literal notranslate"><span class="pre">urllib2</span></code>,
+<code class="docutils literal notranslate"><span class="pre">http</span></code>, and <code class="docutils literal notranslate"><span class="pre">httplib</span></code> modules) encounters an <code class="docutils literal notranslate"><span class="pre">https://</span></code> URL it will wrap
+the network HTTP traffic in a TLS stream, as is necessary to communicate with
+such a server. However, during the TLS handshake it will not actually check
+that the server has an X509 certificate is signed by a CA in any trust root,
+nor will it verify that the Common Name (or Subject Alternate Name) on the
+presented certificate matches the requested host.</p>
+<p>The failure to do these checks means that anyone with a privileged network
+position is able to trivially execute a man in the middle attack against a
+Python application using either of these HTTP clients, and change traffic at
+will.</p>
+<p>This PEP proposes to enable verification of X509 certificate signatures, as
+well as hostname verification for Python’s HTTP clients by default, subject to
+opt-out on a per-call basis. This change would be applied to Python 2.7, Python
+3.4, and Python 3.5.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>The “S” in “HTTPS” stands for secure. When Python’s users type “HTTPS” they are
+expecting a secure connection, and Python should adhere to a reasonable
+standard of care in delivering this. Currently we are failing at this, and in
+doing so, APIs which appear simple are misleading users.</p>
+<p>When asked, many Python users state that they were not aware that Python failed
+to perform these validations, and are shocked.</p>
+<p>The popularity of <code class="docutils literal notranslate"><span class="pre">requests</span></code> (which enables these checks by default)
+demonstrates that these checks are not overly burdensome in any way, and the
+fact that it is widely recommended as a major security improvement over the
+standard library clients demonstrates that many expect a higher standard for
+“security by default” from their tools.</p>
+<p>The failure of various applications to note Python’s negligence in this matter
+is a source of <em>regular</em> CVE assignment <a class="footnote-reference brackets" href="#id12" id="id1">1</a> <a class="footnote-reference brackets" href="#id13" id="id2">2</a> <a class="footnote-reference brackets" href="#id14" id="id3">3</a> <a class="footnote-reference brackets" href="#id15" id="id4">4</a> <a class="footnote-reference brackets" href="#id16" id="id5">5</a> <a class="footnote-reference brackets" href="#id17" id="id6">6</a> <a class="footnote-reference brackets" href="#id18" id="id7">7</a> <a class="footnote-reference brackets" href="#id19" id="id8">8</a>
+<a class="footnote-reference brackets" href="#id20" id="id9">9</a> <a class="footnote-reference brackets" href="#id21" id="id10">10</a> <a class="footnote-reference brackets" href="#id22" id="id11">11</a>.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id12"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2010-4340">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2010-4340</a></dd>
+<dt class="label" id="id13"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2012-3533">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2012-3533</a></dd>
+<dt class="label" id="id14"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2012-5822">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2012-5822</a></dd>
+<dt class="label" id="id15"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2012-5825">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2012-5825</a></dd>
+<dt class="label" id="id16"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-1909">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-1909</a></dd>
+<dt class="label" id="id17"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-2037">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-2037</a></dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-2073">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-2073</a></dd>
+<dt class="label" id="id19"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-2191">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-2191</a></dd>
+<dt class="label" id="id20"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-4111">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-4111</a></dd>
+<dt class="label" id="id21"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-6396">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-6396</a></dd>
+<dt class="label" id="id22"><span class="brackets"><a class="fn-backref" href="#id11">11</a></span></dt>
+<dd><a class="reference external" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-6444">https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-6444</a></dd>
+</dl>
+</section>
+<section id="technical-details">
+<h2><a class="toc-backref" href="#technical-details">Technical Details</a></h2>
+<p>Python would use the system provided certificate database on all platforms.
+Failure to locate such a database would be an error, and users would need to
+explicitly specify a location to fix it.</p>
+<p>This will be achieved by adding a new <code class="docutils literal notranslate"><span class="pre">ssl._create_default_https_context</span></code>
+function, which is the same as <code class="docutils literal notranslate"><span class="pre">ssl.create_default_context</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">http.client</span></code> can then replace its usage of <code class="docutils literal notranslate"><span class="pre">ssl._create_stdlib_context</span></code>
+with the <code class="docutils literal notranslate"><span class="pre">ssl._create_default_https_context</span></code>.</p>
+<p>Additionally <code class="docutils literal notranslate"><span class="pre">ssl._create_stdlib_context</span></code> is renamed
+<code class="docutils literal notranslate"><span class="pre">ssl._create_unverified_context</span></code> (an alias is kept around for backwards
+compatibility reasons).</p>
+<section id="trust-database">
+<h3><a class="toc-backref" href="#trust-database">Trust database</a></h3>
+<p>This PEP proposes using the system-provided certificate database. Previous
+discussions have suggested bundling Mozilla’s certificate database and using
+that by default. This was decided against for several reasons:</p>
+<ul class="simple">
+<li>Using the platform trust database imposes a lower maintenance burden on the
+Python developers – shipping our own trust database would require doing a
+release every time a certificate was revoked.</li>
+<li>Linux vendors, and other downstreams, would unbundle the Mozilla
+certificates, resulting in a more fragmented set of behaviors.</li>
+<li>Using the platform stores makes it easier to handle situations such as
+corporate internal CAs.</li>
+</ul>
+<p>OpenSSL also has a pair of environment variables, <code class="docutils literal notranslate"><span class="pre">SSL_CERT_DIR</span></code> and
+<code class="docutils literal notranslate"><span class="pre">SSL_CERT_FILE</span></code> which can be used to point Python at a different certificate
+database.</p>
+</section>
+<section id="backwards-compatibility">
+<h3><a class="toc-backref" href="#backwards-compatibility">Backwards compatibility</a></h3>
+<p>This change will have the appearance of causing some HTTPS connections to
+“break”, because they will now raise an Exception during handshake.</p>
+<p>This is misleading however, in fact these connections are presently failing
+silently, an HTTPS URL indicates an expectation of confidentiality and
+authentication. The fact that Python does not actually verify that the user’s
+request has been made is a bug, further: “Errors should never pass silently.”</p>
+<p>Nevertheless, users who have a need to access servers with self-signed or
+incorrect certificates would be able to do so by providing a context with
+custom trust roots or which disables validation (documentation should strongly
+recommend the former where possible). Users will also be able to add necessary
+certificates to system trust stores in order to trust them globally.</p>
+<p>Twisted’s 14.0 release made this same change, and it has been met with almost
+no opposition.</p>
+</section>
+<section id="opting-out">
+<h3><a class="toc-backref" href="#opting-out">Opting out</a></h3>
+<p>For users who wish to opt out of certificate verification on a single
+connection, they can achieve this by providing the <code class="docutils literal notranslate"><span class="pre">context</span></code> argument to
+<code class="docutils literal notranslate"><span class="pre">urllib.urlopen</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ssl</span>
+
+<span class="c1"># This restores the same behavior as before.</span>
+<span class="n">context</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">_create_unverified_context</span><span class="p">()</span>
+<span class="n">urllib</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="s2">&quot;https://no-valid-cert&quot;</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>It is also possible, <strong>though highly discouraged</strong>, to globally disable
+verification by monkeypatching the <code class="docutils literal notranslate"><span class="pre">ssl</span></code> module in versions of Python that
+implement this PEP:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ssl</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">_create_unverified_https_context</span> <span class="o">=</span> <span class="n">ssl</span><span class="o">.</span><span class="n">_create_unverified_context</span>
+<span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+    <span class="c1"># Legacy Python that doesn&#39;t verify HTTPS certificates by default</span>
+    <span class="k">pass</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c1"># Handle target environment that doesn&#39;t support HTTPS verification</span>
+    <span class="n">ssl</span><span class="o">.</span><span class="n">_create_default_https_context</span> <span class="o">=</span> <span class="n">_create_unverified_https_context</span>
+</pre></div>
+</div>
+<p>This guidance is aimed primarily at system administrators that wish to adopt
+newer versions of Python that implement this PEP in legacy environments that
+do not yet support certificate verification on HTTPS connections. For
+example, an administrator may opt out by adding the monkeypatch above to
+<code class="docutils literal notranslate"><span class="pre">sitecustomize.py</span></code> in their Standard Operating Environment for Python.
+Applications and libraries SHOULD NOT be making this change process wide
+(except perhaps in response to a system administrator controlled configuration
+setting).</p>
+<p>Particularly security sensitive applications should always provide an explicit
+application defined SSL context rather than relying on the default behaviour
+of the underlying Python implementation.</p>
+</section>
+</section>
+<section id="other-protocols">
+<h2><a class="toc-backref" href="#other-protocols">Other protocols</a></h2>
+<p>This PEP only proposes requiring this level of validation for HTTP clients, not
+for other protocols such as SMTP.</p>
+<p>This is because while a high percentage of HTTPS servers have correct
+certificates, as a result of the validation performed by browsers, for other
+protocols self-signed or otherwise incorrect certificates are far more common.
+Note that for SMTP at least, this appears to be changing and should be reviewed
+for a potential similar PEP in the future:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://www.facebook.com/notes/protect-the-graph/the-current-state-of-smtp-starttls-deployment/1453015901605223">https://www.facebook.com/notes/protect-the-graph/the-current-state-of-smtp-starttls-deployment/1453015901605223</a></li>
+<li><a class="reference external" href="https://www.facebook.com/notes/protect-the-graph/massive-growth-in-smtp-starttls-deployment/1491049534468526">https://www.facebook.com/notes/protect-the-graph/massive-growth-in-smtp-starttls-deployment/1491049534468526</a></li>
+</ul>
+</section>
+<section id="python-versions">
+<h2><a class="toc-backref" href="#python-versions">Python Versions</a></h2>
+<p>This PEP describes changes that will occur on both the 3.4.x, 3.5 and 2.7.X
+branches. For 2.7.X this will require backporting the <code class="docutils literal notranslate"><span class="pre">context</span></code>
+(<code class="docutils literal notranslate"><span class="pre">SSLContext</span></code>) argument to <code class="docutils literal notranslate"><span class="pre">httplib</span></code>, in addition to the features already
+backported in <span class="target" id="index-0"></span><a class="pep reference external" href="../pep-0466"><strong>PEP 466</strong></a>.</p>
+</section>
+<section id="implementation">
+<h2><a class="toc-backref" href="#implementation">Implementation</a></h2>
+<ul class="simple">
+<li><strong>LANDED</strong>: <a class="reference external" href="http://bugs.python.org/issue22366">Issue 22366</a> adds the
+<code class="docutils literal notranslate"><span class="pre">context</span></code> argument to <code class="docutils literal notranslate"><span class="pre">urlib.request.urlopen</span></code>.</li>
+<li><a class="reference external" href="http://bugs.python.org/issue22417">Issue 22417</a> implements the substance
+of this PEP.</li>
+</ul>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed into the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0476.txt">https://github.com/python/peps/blob/master/pep-0476.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0476.txt">2021-02-09 16:54:26 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 476 – Enabling certificate verification by default for stdlib http clients</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#technical-details">Technical Details</a><ul>
+<li><a class="reference internal" href="#trust-database">Trust database</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards compatibility</a></li>
+<li><a class="reference internal" href="#opting-out">Opting out</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#other-protocols">Other protocols</a></li>
+<li><a class="reference internal" href="#python-versions">Python Versions</a></li>
+<li><a class="reference internal" href="#implementation">Implementation</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0476.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

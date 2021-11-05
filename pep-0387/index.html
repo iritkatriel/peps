@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 387 – Backwards Compatibility Policy | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 387 – Backwards Compatibility Policy</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 387 – Backwards Compatibility Policy</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">387</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Backwards Compatibility Policy</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Benjamin Peterson &lt;benjamin&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Brett Cannon (on behalf of the steering council)</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/pep-387-backwards-compatibilty-policy/">https://discuss.python.org/t/pep-387-backwards-compatibilty-policy/</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Active</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">18-Jun-2009</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">19-Jun-2009, 12-Jun-2020</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#backwards-compatibility-rules">Backwards Compatibility Rules</a><ul>
+<li><a class="reference internal" href="#basic-policy-for-backwards-compatibility">Basic policy for backwards compatibility</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#making-incompatible-changes">Making Incompatible Changes</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>This PEP outlines Python’s backwards compatibility policy.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>As one of the most used programming languages today <a class="footnote-reference brackets" href="#tiobe" id="id1">1</a>, the
+Python core language and its standard library play a critical role in
+millions of applications and libraries. This is fantastic. However, it
+means the development team must be very careful not to break this
+existing 3rd party code with new releases.</p>
+<p>This PEP takes the perspective that “backwards incompatibility” means
+preexisting code ceases to comparatively function after a change. It is
+acknowledged that this is not a concrete definition, but the expectation
+is people in general understand what is meant by
+“backwards incompatibility”, and if they are unsure they may ask the
+Python development team and/or steering council for guidance.</p>
+</section>
+<section id="backwards-compatibility-rules">
+<h2><a class="toc-backref" href="#backwards-compatibility-rules">Backwards Compatibility Rules</a></h2>
+<p>This policy applies to all public APIs.  These include:</p>
+<ul class="simple">
+<li>Syntax and behavior of these constructs as defined by the reference
+manual.</li>
+<li>The C-API.</li>
+<li>Function, class, module, attribute, and method names and types.</li>
+<li>Given a set of arguments, the return value, side effects, and raised
+exceptions of a function.  This does not preclude changes from
+reasonable bug fixes.</li>
+<li>The position and expected types of arguments and returned values.</li>
+<li>Behavior of classes with regards to subclasses: the conditions under
+which overridden methods are called.</li>
+<li>Documented exceptions and the semantics which lead to their raising.</li>
+<li>Exceptions commonly raised in EAFP scenarios.</li>
+</ul>
+<p>Others are explicitly not part of the public API.  They can change or
+be removed at any time in any way.  These include:</p>
+<ul class="simple">
+<li>Function, class, module, attribute, method, and C-API names and
+types that are prefixed by “_” (except special names).</li>
+<li>Anything documented publicly as being private.</li>
+<li>Imported modules (unless explicitly documented as part of the public
+API; e.g. importing the <code class="docutils literal notranslate"><span class="pre">bacon</span></code> module in the <code class="docutils literal notranslate"><span class="pre">spam</span></code> does not
+automatically mean <code class="docutils literal notranslate"><span class="pre">spam.bacon</span></code> is part of the public API unless
+it is documented as such).</li>
+<li>Inheritance patterns of internal classes.</li>
+<li>Test suites.  (Anything in the <code class="docutils literal notranslate"><span class="pre">Lib/test</span></code> directory or test
+subdirectories of packages.)</li>
+<li>Backward compatibility rules do not apply to any module or API that is
+explicitly documented as <strong>Provisional</strong> per <a class="reference external" href="../pep-0411">PEP 411</a>.</li>
+</ul>
+<section id="basic-policy-for-backwards-compatibility">
+<h3><a class="toc-backref" href="#basic-policy-for-backwards-compatibility">Basic policy for backwards compatibility</a></h3>
+<ul class="simple">
+<li>In general, incompatibilities should have a large benefit to
+breakage ratio, and the incompatibility should be easy to resolve in
+affected code.  For example, adding an stdlib module with the same
+name as a third party package is generally not acceptable.  Adding
+a method or attribute that conflicts with 3rd party code through
+inheritance, however, is likely reasonable.</li>
+<li>Unless it is going through the deprecation process below, the
+behavior of an API <em>must</em> not change in an incompatible fashion
+between any two consecutive releases.  Python’s yearly release
+process (<span class="target" id="index-0"></span><a class="pep reference external" href="../pep-0602"><strong>PEP 602</strong></a>) means that the deprecation period must last at
+least two years.</li>
+<li>Similarly a feature cannot be removed without notice between any two
+consecutive releases.</li>
+<li>The steering council may grant exceptions to this policy. In
+particular, they may shorten the required deprecation period for a
+feature. Exceptions are only granted for extreme situations such as
+dangerously broken or insecure features or features no one could
+reasonably be depending on (e.g., support for completely obsolete
+platforms).</li>
+</ul>
+</section>
+</section>
+<section id="making-incompatible-changes">
+<h2><a class="toc-backref" href="#making-incompatible-changes">Making Incompatible Changes</a></h2>
+<p>Making an incompatible change is a gradual process performed over
+several releases:</p>
+<ol class="arabic simple">
+<li>Discuss the change.  Depending on the degree of incompatibility,
+this could be on the bug tracker, python-dev, python-list, or the
+appropriate SIG.  A PEP or similar document may be written.
+Hopefully users of the affected API will pipe up to comment.</li>
+<li>Add a warning.  If behavior is changing, the API may gain a new
+function or method to perform the new behavior; old usage should
+raise the warning.  If an API is being removed, simply warn
+whenever it is entered.  <code class="docutils literal notranslate"><span class="pre">DeprecationWarning</span></code> is the usual
+warning category to use, but <code class="docutils literal notranslate"><span class="pre">PendingDeprecationWarning</span></code> may be
+used in special cases where the old and new versions of the API will
+coexist for many releases <a class="footnote-reference brackets" href="#warnings" id="id2">2</a>. Compiler warnings are also
+acceptable. The warning message should include the release the
+incompatibility is expected to become the default and a link to an
+issue that users can post feedback to.</li>
+<li>Wait for the warning to appear in at least two minor Python
+versions of the same major version, or one minor version in an older
+major version (e.g. for a warning in Python 3.10, you either wait
+until at least Python 3.12 or Python 4.0 to make the change).
+It’s fine to wait more than two releases.</li>
+<li>See if there’s any feedback.  Users not involved in the original
+discussions may comment now after seeing the warning.  Perhaps
+reconsider.</li>
+<li>The behavior change or feature removal may now be made default or
+permanent having reached the declared version. Remove the old
+version and warning.</li>
+</ol>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="tiobe"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>TIOBE Programming Community Index<p><a class="reference external" href="http://www.tiobe.com/index.php/content/paperinfo/tpci/index.html">http://www.tiobe.com/index.php/content/paperinfo/tpci/index.html</a></p>
+</dd>
+<dt class="label" id="warnings"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>The warnings module<p><a class="reference external" href="http://docs.python.org/library/warnings.html">http://docs.python.org/library/warnings.html</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0387.txt">https://github.com/python/peps/blob/master/pep-0387.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0387.txt">2021-04-16 22:21:47 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 387 – Backwards Compatibility Policy</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#backwards-compatibility-rules">Backwards Compatibility Rules</a><ul>
+<li><a class="reference internal" href="#basic-policy-for-backwards-compatibility">Basic policy for backwards compatibility</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#making-incompatible-changes">Making Incompatible Changes</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0387.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

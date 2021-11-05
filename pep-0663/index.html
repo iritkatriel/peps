@@ -1,0 +1,479 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 663 – Standardizing Enum str(), repr(), and format() behaviors | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 663 – Standardizing Enum str(), repr(), and format() behaviors</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 663 – Standardizing Enum str(), repr(), and format() behaviors</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">663</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Standardizing Enum str(), repr(), and format() behaviors</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Ethan Furman &lt;ethan&#32;&#97;t&#32;stoneleaf.us&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="mailto:python-dev&#37;&#52;&#48;python&#46;org?subject=PEP%20663">python-dev<span>&#64;</span>python<span>&#46;</span>org</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Draft</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Informational</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">23-Feb-2013</dd>
+<dt class="field-even">Python-Version</dt>
+<dd class="field-even">3.11</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">20-Jul-2021, 02-Nov-2021</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>Update the <code class="docutils literal notranslate"><span class="pre">repr()</span></code>, <code class="docutils literal notranslate"><span class="pre">str()</span></code>, and <code class="docutils literal notranslate"><span class="pre">format()</span></code> of the various Enum types
+to better match their intended purpose.  For example, <code class="docutils literal notranslate"><span class="pre">IntEnum</span></code> will have
+its <code class="docutils literal notranslate"><span class="pre">str()</span></code> change to match its <code class="docutils literal notranslate"><span class="pre">format()</span></code>, while a user-mixed int-enum
+will have its <code class="docutils literal notranslate"><span class="pre">format()</span></code> match its <code class="docutils literal notranslate"><span class="pre">str()</span></code>.  In all cases, an enum’s
+<code class="docutils literal notranslate"><span class="pre">str()</span></code> and <code class="docutils literal notranslate"><span class="pre">format()</span></code> will be the same (unless the user overrides
+<code class="docutils literal notranslate"><span class="pre">format()</span></code>).</p>
+<p>Add a global enum decorator which changes the <code class="docutils literal notranslate"><span class="pre">str()</span></code> and <code class="docutils literal notranslate"><span class="pre">repr()</span></code>  (and
+<code class="docutils literal notranslate"><span class="pre">format()</span></code>) of the decorated enum to be a valid global reference: i.e.
+<code class="docutils literal notranslate"><span class="pre">re.IGNORECASE</span></code> instead of <code class="docutils literal notranslate"><span class="pre">&lt;RegexFlag.IGNORECASE:</span> <span class="pre">2&gt;</span></code>.</p>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#motivation">Motivation</a></h2>
+<p>Having the <code class="docutils literal notranslate"><span class="pre">str()</span></code> of <code class="docutils literal notranslate"><span class="pre">IntEnum</span></code> and <code class="docutils literal notranslate"><span class="pre">IntFlag</span></code> not be the value causes
+bugs and extra work when replacing existing constants.</p>
+<p>Having the <code class="docutils literal notranslate"><span class="pre">str()</span></code> and <code class="docutils literal notranslate"><span class="pre">format()</span></code> of an enum member be different can be
+confusing.</p>
+<p>The addition of <code class="docutils literal notranslate"><span class="pre">StrEnum</span></code> with its requirement to have its <code class="docutils literal notranslate"><span class="pre">str()</span></code> be its
+<code class="docutils literal notranslate"><span class="pre">value</span></code> is inconsistent with other provided Enum’s <code class="docutils literal notranslate"><span class="pre">str</span></code>.</p>
+<p>The iteration of <code class="docutils literal notranslate"><span class="pre">Flag</span></code> members, which directly affects their <code class="docutils literal notranslate"><span class="pre">repr()</span></code>, is
+inelegant at best, and buggy at worst.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>Enums are becoming more common in the standard library; being able to recognize
+enum members by their <code class="docutils literal notranslate"><span class="pre">repr()</span></code>, and having that <code class="docutils literal notranslate"><span class="pre">repr()</span></code> be easy to parse, is
+useful and can save time and effort in understanding and debugging code.</p>
+<p>However, the enums with mixed-in data types (<code class="docutils literal notranslate"><span class="pre">IntEnum</span></code>, <code class="docutils literal notranslate"><span class="pre">IntFlag</span></code>, and the new
+<code class="docutils literal notranslate"><span class="pre">StrEnum</span></code>) need to be more backwards compatible with the constants they are
+replacing – specifically, <code class="docutils literal notranslate"><span class="pre">str(replacement_enum_member)</span> <span class="pre">==</span> <span class="pre">str(original_constant)</span></code>
+should be true (and the same for <code class="docutils literal notranslate"><span class="pre">format()</span></code>).</p>
+<p>IntEnum, IntFlag, and StrEnum should be as close to a drop-in replacement of
+existing integer and string constants as is possible.  Towards that goal, the
+<code class="docutils literal notranslate"><span class="pre">str()</span></code> output of each should be its inherent value; e.g. if <code class="docutils literal notranslate"><span class="pre">Color</span></code> is an
+<code class="docutils literal notranslate"><span class="pre">IntEnum</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Color</span><span class="o">.</span><span class="n">RED</span>
+<span class="go">&lt;Color.RED: 1&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">RED</span><span class="p">)</span>
+<span class="go">&#39;1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">format</span><span class="p">(</span><span class="n">Color</span><span class="o">.</span><span class="n">RED</span><span class="p">)</span>
+<span class="go">&#39;1&#39;</span>
+</pre></div>
+</div>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">format()</span></code> already produces the correct output, only <code class="docutils literal notranslate"><span class="pre">str()</span></code> needs
+updating.</p>
+<p>As much as possible, the <code class="docutils literal notranslate"><span class="pre">str()</span></code>, <code class="docutils literal notranslate"><span class="pre">repr()</span></code>, and <code class="docutils literal notranslate"><span class="pre">format()</span></code> of enum members
+should be standardized across the standard library.  However, up to Python 3.10
+several enums in the standard library have a custom <code class="docutils literal notranslate"><span class="pre">str()</span></code> and/or <code class="docutils literal notranslate"><span class="pre">repr()</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">repr()</span></code> of Flag currently includes aliases, which it should not; fixing that
+will, of course, already change its <code class="docutils literal notranslate"><span class="pre">repr()</span></code> in certain cases.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification">Specification</a></h2>
+<p>There a three broad categories of enum usage:</p>
+<ul class="simple">
+<li>simple: <code class="docutils literal notranslate"><span class="pre">Enum</span></code> or <code class="docutils literal notranslate"><span class="pre">Flag</span></code>
+a new enum class is created with no data type mixins</li>
+<li>drop-in replacement: <code class="docutils literal notranslate"><span class="pre">IntEnum</span></code>, <code class="docutils literal notranslate"><span class="pre">IntFlag</span></code>, <code class="docutils literal notranslate"><span class="pre">StrEnum</span></code>
+a new enum class is created which also subclasses <code class="docutils literal notranslate"><span class="pre">int</span></code> or <code class="docutils literal notranslate"><span class="pre">str</span></code> and uses
+<code class="docutils literal notranslate"><span class="pre">int.__str__</span></code> or <code class="docutils literal notranslate"><span class="pre">str.__str__</span></code></li>
+<li>user-mixed enums and flags
+the user creates their own integer-, float-, str-, whatever-enums instead of
+using enum.IntEnum, etc.</li>
+</ul>
+<p>There are also two styles:</p>
+<ul class="simple">
+<li>normal: the enumeration members remain in their classes and are accessed as
+<code class="docutils literal notranslate"><span class="pre">classname.membername</span></code>, and the class name shows in their <code class="docutils literal notranslate"><span class="pre">repr()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">str()</span></code> (where appropriate)</li>
+<li>global: the enumeration members are copied into their module’s global
+namespace, and their module name shows in their <code class="docutils literal notranslate"><span class="pre">repr()</span></code> and <code class="docutils literal notranslate"><span class="pre">str()</span></code>
+(where appropriate)</li>
+</ul>
+<p>Some sample enums:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># module: tools.py</span>
+
+<span class="k">class</span> <span class="nc">Hue</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>  <span class="c1"># or IntEnum</span>
+    <span class="n">LIGHT</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="n">NORMAL</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">DARK</span> <span class="o">=</span> <span class="o">+</span><span class="mi">1</span>
+
+<span class="k">class</span> <span class="nc">Color</span><span class="p">(</span><span class="n">Flag</span><span class="p">):</span>  <span class="c1"># or IntFlag</span>
+    <span class="n">RED</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">GREEN</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">BLUE</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="k">class</span> <span class="nc">Grey</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>  <span class="c1"># or (int, Flag)</span>
+   <span class="n">BLACK</span> <span class="o">=</span> <span class="mi">0</span>
+   <span class="n">WHITE</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p>Using the above enumerations, the following two tables show the old and new
+output (blank cells indicate no change):</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 16%" />
+<col style="width: 12%" />
+<col style="width: 20%" />
+<col style="width: 14%" />
+<col style="width: 28%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td>style</td>
+<td colspan="2">category</td>
+<td>enum repr()</td>
+<td>enum str()</td>
+<td>enum format()</td>
+</tr>
+<tr class="row-even"><td rowspan="6">normal</td>
+<td rowspan="2">simple</td>
+<td>3.10</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td rowspan="2">user mixed</td>
+<td>3.10</td>
+<td></td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td></td>
+<td></td>
+<td>Grey.WHITE</td>
+</tr>
+<tr class="row-even"><td rowspan="2">int drop-in</td>
+<td>3.10</td>
+<td></td>
+<td>Hue.LIGHT</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td></td>
+<td>-1</td>
+<td></td>
+</tr>
+<tr class="row-even"><td rowspan="6">global</td>
+<td rowspan="2">simple</td>
+<td>3.10</td>
+<td>&lt;Hue.LIGHT: -1&gt;</td>
+<td>Hue.LIGHT</td>
+<td>Hue.LIGHT</td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td>tools.LIGHT</td>
+<td>LIGHT</td>
+<td>LIGHT</td>
+</tr>
+<tr class="row-even"><td rowspan="2">user mixed</td>
+<td>3.10</td>
+<td>&lt;Grey.WHITE: 1</td>
+<td>Grey.WHITE</td>
+<td>Grey.WHITE</td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td>tools.WHITE</td>
+<td>WHITE</td>
+<td>WHITE</td>
+</tr>
+<tr class="row-even"><td rowspan="2">int drop-in</td>
+<td>3.10</td>
+<td>&lt;Hue.LIGHT: -1&gt;</td>
+<td>Hue.LIGHT</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td>tools.LIGHT</td>
+<td>-1</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 13%" />
+<col style="width: 10%" />
+<col style="width: 23%" />
+<col style="width: 24%" />
+<col style="width: 23%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td>style</td>
+<td colspan="2">category</td>
+<td>flag repr()</td>
+<td>flag str()</td>
+<td>flag format()</td>
+</tr>
+<tr class="row-even"><td rowspan="6">normal</td>
+<td rowspan="2">simple</td>
+<td>3.10</td>
+<td>&lt;Color.RED|GREEN: 3&gt;</td>
+<td>Color.RED|GREEN</td>
+<td>Color.RED|GREEN</td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td>&lt;Color(3): RED|GREEN&gt;</td>
+<td>Color.RED|Color.GREEN</td>
+<td>Color.RED|Color.GREEN</td>
+</tr>
+<tr class="row-even"><td rowspan="2">user mixed</td>
+<td>3.10</td>
+<td>&lt;Grey.WHITE: 1&gt;</td>
+<td></td>
+<td>1</td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td>&lt;Grey(1): WHITE&gt;</td>
+<td></td>
+<td>Grey.WHITE</td>
+</tr>
+<tr class="row-even"><td rowspan="2">int drop-in</td>
+<td>3.10</td>
+<td>&lt;Color.RED|GREEN: 3&gt;</td>
+<td>Color.RED|GREEN</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td>&lt;Color(3): RED|GREEN&gt;</td>
+<td>3</td>
+<td></td>
+</tr>
+<tr class="row-even"><td rowspan="6">global</td>
+<td rowspan="2">simple</td>
+<td>3.10</td>
+<td>&lt;Color.RED|GREEN: 3&gt;</td>
+<td>Color.RED|GREEN</td>
+<td>Color.RED|GREEN</td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td>tools.RED|tools.GREEN</td>
+<td>RED|GREEN</td>
+<td>RED|GREEN</td>
+</tr>
+<tr class="row-even"><td rowspan="2">user mixed</td>
+<td>3.10</td>
+<td>&lt;Grey.WHITE: 1&gt;</td>
+<td>Grey.WHITE</td>
+<td>1</td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td>tools.WHITE</td>
+<td>WHITE</td>
+<td>WHITE</td>
+</tr>
+<tr class="row-even"><td rowspan="2">int drop-in</td>
+<td>3.10</td>
+<td>&lt;Color.RED|GREEN: 3&gt;</td>
+<td>Color.RED|GREEN</td>
+<td></td>
+</tr>
+<tr class="row-odd"><td>new</td>
+<td>tools.RED|tools.GREEN</td>
+<td>3</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>These two tables show the final result:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 18%" />
+<col style="width: 23%" />
+<col style="width: 16%" />
+<col style="width: 32%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td>style</td>
+<td>category</td>
+<td>enum repr()</td>
+<td>enum str()</td>
+<td>enum format()</td>
+</tr>
+<tr class="row-even"><td rowspan="3">normal</td>
+<td>simple</td>
+<td>&lt;Hue.LIGHT: -1&gt;</td>
+<td>Hue.LIGHT</td>
+<td>Hue.LIGHT</td>
+</tr>
+<tr class="row-odd"><td>user mixed</td>
+<td>&lt;Grey.WHITE: 1&gt;</td>
+<td>Grey.WHITE</td>
+<td>Grey.WHITE</td>
+</tr>
+<tr class="row-even"><td>int drop-in</td>
+<td>&lt;Hue.LIGHT: -1&gt;</td>
+<td>-1</td>
+<td>-1</td>
+</tr>
+<tr class="row-odd"><td rowspan="3">global</td>
+<td>simple</td>
+<td>tools.LIGHT</td>
+<td>LIGHT</td>
+<td>LIGHT</td>
+</tr>
+<tr class="row-even"><td>user mixed</td>
+<td>tools.WHITE</td>
+<td>WHITE</td>
+<td>WHITE</td>
+</tr>
+<tr class="row-odd"><td>int drop-in</td>
+<td>tools.LIGHT</td>
+<td>-1</td>
+<td>-1</td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 14%" />
+<col style="width: 25%" />
+<col style="width: 26%" />
+<col style="width: 25%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td>style</td>
+<td>category</td>
+<td>flag repr()</td>
+<td>flag str()</td>
+<td>flag format()</td>
+</tr>
+<tr class="row-even"><td rowspan="3">normal</td>
+<td>simple</td>
+<td>&lt;Color(3): RED|GREEN&gt;</td>
+<td>Color.RED|Color.GREEN</td>
+<td>Color.RED|Color.GREEN</td>
+</tr>
+<tr class="row-odd"><td>user mixed</td>
+<td>&lt;Grey(1): WHITE&gt;</td>
+<td>Grey.WHITE</td>
+<td>Grey.WHITE</td>
+</tr>
+<tr class="row-even"><td>int drop-in</td>
+<td>&lt;Color(3): RED|GREEN&gt;</td>
+<td>3</td>
+<td>3</td>
+</tr>
+<tr class="row-odd"><td rowspan="3">global</td>
+<td>simple</td>
+<td>tools.RED|tools.GREEN</td>
+<td>RED|GREEN</td>
+<td>RED|GREEN</td>
+</tr>
+<tr class="row-even"><td>user mixed</td>
+<td>tools.WHITE</td>
+<td>WHITE</td>
+<td>WHITE</td>
+</tr>
+<tr class="row-odd"><td>int drop-in</td>
+<td>tools.RED|tools.GREEN</td>
+<td>3</td>
+<td>3</td>
+</tr>
+</tbody>
+</table>
+<p>As can be seen, <code class="docutils literal notranslate"><span class="pre">repr()</span></code> is primarily affected by whether the members are
+global, while <code class="docutils literal notranslate"><span class="pre">str()</span></code> is affected by being global or by being a drop-in
+replacement, with the drop-in replacement status having a higher priority.
+Also, the basic <code class="docutils literal notranslate"><span class="pre">repr()</span></code> and <code class="docutils literal notranslate"><span class="pre">str()</span></code> have changed for flags as the old
+style was flawed.</p>
+</section>
+<section id="backwards-compatibility">
+<h2><a class="toc-backref" href="#backwards-compatibility">Backwards Compatibility</a></h2>
+<p>Backwards compatibility of stringified objects is not guaranteed across major
+Python versions, and there will be backwards compatibility breaks where
+software uses the <code class="docutils literal notranslate"><span class="pre">repr()</span></code>, <code class="docutils literal notranslate"><span class="pre">str()</span></code>, and <code class="docutils literal notranslate"><span class="pre">format()</span></code> output of enums in
+tests, documentation, data structures, and/or code generation.</p>
+<p>Normal usage of enum members will not change: <code class="docutils literal notranslate"><span class="pre">re.ASCII</span></code> can still be used
+as <code class="docutils literal notranslate"><span class="pre">re.ASCII</span></code> and will still compare equal to <code class="docutils literal notranslate"><span class="pre">256</span></code>.</p>
+<p>If the previous output needs to be maintained, for example to ensure
+compatibility between different Python versions, software projects will need to
+create their own enum base class with the appropriate methods overridden.</p>
+<p>Note that by changing the <code class="docutils literal notranslate"><span class="pre">str()</span></code> of the drop-in category, we will actually
+prevent future breakage when <code class="docutils literal notranslate"><span class="pre">IntEnum</span></code>, et al, are used to replace existing
+constants.</p>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0663.txt">https://github.com/python/peps/blob/master/pep-0663.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0663.txt">2021-11-03 03:40:52 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 663 – Standardizing Enum str(), repr(), and format() behaviors</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0663.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

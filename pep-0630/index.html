@@ -1,0 +1,551 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 630 – Isolating Extension Modules | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 630 – Isolating Extension Modules</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 630 – Isolating Extension Modules</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">630</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Isolating Extension Modules</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Petr Viktorin &lt;encukou&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Discussions-To</dt>
+<dd class="field-even"><a class="reference external" href="mailto:capi-sig&#37;&#52;&#48;python&#46;org?subject=PEP%20630">capi-sig&#32;&#97;t&#32;python.org</a></dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Active</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Informational</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">25-Aug-2020</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">16-Jul-2020</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#isolating-extension-modules">Isolating Extension Modules</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#about-this-document">About this document</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale-for-per-module-state">Rationale for Per-module State</a><ul>
+<li><a class="reference internal" href="#goal-easy-to-use-module-state">Goal: Easy-to-use Module State</a></li>
+<li><a class="reference internal" href="#non-goals-speedups-and-the-gil">Non-goals: Speedups and the GIL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-make-modules-safe-with-multiple-interpreters">How to make modules safe with multiple interpreters</a><ul>
+<li><a class="reference internal" href="#isolated-module-objects">Isolated Module Objects</a></li>
+<li><a class="reference internal" href="#surprising-edge-cases">Surprising Edge Cases</a></li>
+<li><a class="reference internal" href="#managing-global-state">Managing Global State</a></li>
+<li><a class="reference internal" href="#managing-per-module-state">Managing Per-Module State</a></li>
+<li><a class="reference internal" href="#opt-out-limiting-to-one-module-object-per-process">Opt-Out: Limiting to One Module Object per Process</a></li>
+<li><a class="reference internal" href="#module-state-access-from-functions">Module State Access from Functions</a></li>
+<li><a class="reference internal" href="#heap-types">Heap types</a></li>
+<li><a class="reference internal" href="#module-state-access-from-classes">Module State Access from Classes</a></li>
+<li><a class="reference internal" href="#module-state-access-from-regular-methods">Module State Access from Regular Methods</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a><ul>
+<li><a class="reference internal" href="#module-state-access-from-slot-methods-getters-and-setters">Module State Access from Slot Methods, Getters and Setters</a></li>
+<li><a class="reference internal" href="#type-checking">Type Checking</a></li>
+<li><a class="reference internal" href="#metaclasses">Metaclasses</a></li>
+<li><a class="reference internal" href="#per-class-scope">Per-Class scope</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="isolating-extension-modules">
+<h2><a class="toc-backref" href="#isolating-extension-modules">Isolating Extension Modules</a></h2>
+<section id="abstract">
+<h3><a class="toc-backref" href="#abstract">Abstract</a></h3>
+<p>Traditionally, state of Python extension modules was kept in C
+<code class="docutils literal notranslate"><span class="pre">static</span></code> variables, which have process-wide scope. This document
+describes problems of such per-process state and efforts to make
+per-module state, a better default, possible and easy to use.</p>
+<p>The document also describes how to switch to per-module state where
+possible. The switch involves allocating space for that state, switching
+from static types to heap types, and—perhaps most importantly—accessing
+per-module state from code.</p>
+</section>
+<section id="about-this-document">
+<h3><a class="toc-backref" href="#about-this-document">About this document</a></h3>
+<p>As an <a class="reference external" href="https://www.python.org/dev/peps/pep-0001/#pep-types">informational PEP</a>,
+this document does not introduce any changes: those should be done in
+their own PEPs (or issues, if small enough). Rather, it covers the
+motivation behind an effort that spans multiple releases, and instructs
+early adopters on how to use the finished features.</p>
+<p>Once support is reasonably complete, the text can be moved to Python’s
+documentation as a HOWTO. Meanwhile, in the spirit of documentation-driven
+development, gaps identified in this text can show where to focus
+the effort, and the text can be updated as new features are implemented</p>
+<p>Whenever this PEP mentions <em>extension modules</em>, the advice also
+applies to <em>built-in</em> modules, such as the C parts of the standard
+library. The standard library is expected to switch to per-module state
+early.</p>
+<p>PEPs related to this effort are:</p>
+<ul class="simple">
+<li><a class="reference external" href="../pep-0384">PEP 384</a> – <em>Defining a Stable ABI</em>, which added C API for creating
+heap types</li>
+<li><a class="reference external" href="../pep-0489">PEP 489</a> – <em>Multi-phase extension module initialization</em></li>
+<li><a class="reference external" href="../pep-0573">PEP 573</a> – <em>Module State Access from C Extension Methods</em></li>
+</ul>
+<p>This document is concerned with Python’s public C API, which is not
+offered by all implementations of Python. However, nothing in this PEP is
+specific to CPython.</p>
+<p>As with any Informational PEP, this text does not necessarily represent
+a Python community consensus or recommendation.</p>
+</section>
+<section id="motivation">
+<h3><a class="toc-backref" href="#motivation">Motivation</a></h3>
+<p>An <em>interpreter</em> is the context in which Python code runs. It contains
+configuration (e.g. the import path) and runtime state (e.g. the set of
+imported modules).</p>
+<p>Python supports running multiple interpreters in one process. There are
+two cases to think about—users may run interpreters:</p>
+<ul class="simple">
+<li>in sequence, with several <code class="docutils literal notranslate"><span class="pre">Py_InitializeEx</span></code>/<code class="docutils literal notranslate"><span class="pre">Py_FinalizeEx</span></code>
+cycles, and</li>
+<li>in parallel, managing “sub-interpreters” using
+<code class="docutils literal notranslate"><span class="pre">Py_NewInterpreter</span></code>/<code class="docutils literal notranslate"><span class="pre">Py_EndInterpreter</span></code>.</li>
+</ul>
+<p>Both cases (and combinations of them) would be most useful when
+embedding Python within a library. Libraries generally shouldn’t make
+assumptions about the application that uses them, which includes
+assumptions about a process-wide “main Python interpreter”.</p>
+<p>Currently, CPython doesn’t handle this use case well. Many extension
+modules (and even some stdlib modules) use <em>per-process</em> global state,
+because C <code class="docutils literal notranslate"><span class="pre">static</span></code> variables are extremely easy to use. Thus, data
+that should be specific to an interpreter ends up being shared between
+interpreters. Unless the extension developer is careful, it is very easy
+to introduce edge cases that lead to crashes when a module is loaded in
+more than one interpreter.</p>
+<p>Unfortunately, <em>per-interpreter</em> state is not easy to achieve: extension
+authors tend to not keep multiple interpreters in mind when developing,
+and it is currently cumbersome to test the behavior.</p>
+</section>
+<section id="rationale-for-per-module-state">
+<h3><a class="toc-backref" href="#rationale-for-per-module-state">Rationale for Per-module State</a></h3>
+<p>Instead of focusing on per-interpreter state, Python’s C API is evolving
+to better support the more granular <em>per-module</em> state. By default,
+C-level data will be attached to a <em>module object</em>. Each interpreter
+will then create its own module object, keeping data separate. For
+testing the isolation, multiple module objects corresponding to a single
+extension can even be loaded in a single interpreter.</p>
+<p>Per-module state provides an easy way to think about lifetime and
+resource ownership: the extension module author will set up when a
+module object is created, and clean up when it’s freed. In this regard,
+a module is just like any other <code class="docutils literal notranslate"><span class="pre">PyObject</span> <span class="pre">*</span></code>; there are no “on
+interpreter shutdown” hooks to think about—or forget about.</p>
+<section id="goal-easy-to-use-module-state">
+<h4><a class="toc-backref" href="#goal-easy-to-use-module-state">Goal: Easy-to-use Module State</a></h4>
+<p>It is currently cumbersome or impossible to do everything the C API
+offers while keeping modules isolated. Enabled by <a class="reference external" href="../pep-0384">PEP 384</a>, changes in
+PEPs 489 and 573 (and future planned ones) aim to first make it
+<em>possible</em> to build modules this way, and then to make it <em>easy</em> to
+write new modules this way and to convert old ones, so that it can
+become a natural default.</p>
+<p>Even if per-module state becomes the default, there will be use cases
+for different levels of encapsulation: per-process, per-interpreter,
+per-thread or per-task state. The goal is to treat these as exceptional
+cases: they should be possible, but extension authors will need to
+think more carefully about them.</p>
+</section>
+<section id="non-goals-speedups-and-the-gil">
+<h4><a class="toc-backref" href="#non-goals-speedups-and-the-gil">Non-goals: Speedups and the GIL</a></h4>
+<p>There is some effort to speed up CPython on multi-core CPUs by making the GIL
+per-interpreter. While isolating interpreters helps that effort,
+defaulting to per-module state will be beneficial even if no speedup is
+achieved, as it makes supporting multiple interpreters safer by default.</p>
+</section>
+</section>
+<section id="how-to-make-modules-safe-with-multiple-interpreters">
+<h3><a class="toc-backref" href="#how-to-make-modules-safe-with-multiple-interpreters">How to make modules safe with multiple interpreters</a></h3>
+<p>There are many ways to correctly support multiple interpreters in
+extension modules. The rest of this text describes the preferred way to
+write such a module, or to convert an existing module.</p>
+<p>Note that support is a work in progress; the API for some features your
+module needs might not yet be ready.</p>
+<p>A full example module is available as
+<a class="reference external" href="https://github.com/python/cpython/blob/master/Modules/xxlimited.c">xxlimited</a>.</p>
+<p>This section assumes that “<em>you</em>” are an extension module author.</p>
+<section id="isolated-module-objects">
+<h4><a class="toc-backref" href="#isolated-module-objects">Isolated Module Objects</a></h4>
+<p>The key point to keep in mind when developing an extension module is
+that several module objects can be created from a single shared library.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">binascii</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">old_binascii</span> <span class="o">=</span> <span class="n">binascii</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="s1">&#39;binascii&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">binascii</span>  <span class="c1"># create a new module object</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">old_binascii</span> <span class="o">==</span> <span class="n">binascii</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>As a rule of thumb, the two modules should be completely independent.
+All objects and state specific to the module should be encapsulated
+within the module object, not shared with other module objects, and
+cleaned up when the module object is deallocated. Exceptions are
+possible (see “Managing global state” below), but they will need more
+thought and attention to edge cases than code that follows this rule of
+thumb.</p>
+<p>While some modules could do with less stringent restrictions, isolated
+modules make it easier to set clear expectations (and guidelines) that
+work across a variety of use cases.</p>
+</section>
+<section id="surprising-edge-cases">
+<h4><a class="toc-backref" href="#surprising-edge-cases">Surprising Edge Cases</a></h4>
+<p>Note that isolated modules do create some surprising edge cases. Most
+notably, each module object will typically not share its classes and
+exceptions with other similar modules. Continuing from the example
+above, note that <code class="docutils literal notranslate"><span class="pre">old_binascii.Error</span></code> and <code class="docutils literal notranslate"><span class="pre">binascii.Error</span></code> are
+separate objects. In the following code, the exception is <em>not</em> caught:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">old_binascii</span><span class="o">.</span><span class="n">Error</span> <span class="o">==</span> <span class="n">binascii</span><span class="o">.</span><span class="n">Error</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">old_binascii</span><span class="o">.</span><span class="n">unhexlify</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;qwertyuiop&#39;</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">except</span> <span class="n">binascii</span><span class="o">.</span><span class="n">Error</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;boo&#39;</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gt">Traceback (most recent call last):</span>
+  File <span class="nb">&quot;&lt;stdin&gt;&quot;</span>, line <span class="m">2</span>, in <span class="n">&lt;module&gt;</span>
+<span class="gr">binascii.Error</span>: <span class="n">Non-hexadecimal digit found</span>
+</pre></div>
+</div>
+<p>This is expected. Notice that pure-Python modules behave the same way:
+it is a part of how Python works.</p>
+<p>The goal is to make extension modules safe at the C level, not to make
+hacks behave intuitively. Mutating <code class="docutils literal notranslate"><span class="pre">sys.modules</span></code> “manually” counts
+as a hack.</p>
+</section>
+<section id="managing-global-state">
+<h4><a class="toc-backref" href="#managing-global-state">Managing Global State</a></h4>
+<p>Sometimes, state of a Python module is not specific to that module, but
+to the entire process (or something else “more global” than a module).
+For example:</p>
+<ul class="simple">
+<li>The <code class="docutils literal notranslate"><span class="pre">readline</span></code> module manages <em>the</em> terminal.</li>
+<li>A module running on a circuit board wants to control <em>the</em> on-board
+LED.</li>
+</ul>
+<p>In these cases, the Python module should provide <em>access</em> to the global
+state, rather than <em>own</em> it. If possible, write the module so that
+multiple copies of it can access the state independently (along with
+other libraries, whether for Python or other languages).</p>
+<p>If that is not possible, consider explicit locking.</p>
+<p>If it is necessary to use process-global state, the simplest way to
+avoid issues with multiple interpreters is to explicitly prevent a
+module from being loaded more than once per process—see “Opt-Out:
+Limiting to One Module Object per Process” below.</p>
+</section>
+<section id="managing-per-module-state">
+<h4><a class="toc-backref" href="#managing-per-module-state">Managing Per-Module State</a></h4>
+<p>To use per-module state, use <a class="reference external" href="https://docs.python.org/3/c-api/module.html#multi-phase-initialization">multi-phase extension module
+initialization</a>
+introduced in <a class="reference external" href="../pep-0489">PEP 489</a>. This signals that your module supports multiple
+interpreters correctly.</p>
+<p>Set <code class="docutils literal notranslate"><span class="pre">PyModuleDef.m_size</span></code> to a positive number to request that many
+bytes of storage local to the module. Usually, this will be set to the
+size of some module-specific <code class="docutils literal notranslate"><span class="pre">struct</span></code>, which can store all of the
+module’s C-level state. In particular, it is where you should put
+pointers to classes (including exceptions) and settings (e.g. <code class="docutils literal notranslate"><span class="pre">csv</span></code>’s
+<a class="reference external" href="https://docs.python.org/3.8/library/csv.html#csv.field_size_limit">field_size_limit</a>)
+which the C code needs to function.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Another option is to store state in the module’s <code class="docutils literal notranslate"><span class="pre">__dict__</span></code>,
+but you must avoid crashing when users modify <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> from
+Python code. This means error- and type-checking at the C level,
+which is easy to get wrong and hard to test sufficiently.</p>
+</div>
+<p>If the module state includes <code class="docutils literal notranslate"><span class="pre">PyObject</span></code> pointers, the module object
+must hold references to those objects and implement module-level hooks
+<code class="docutils literal notranslate"><span class="pre">m_traverse</span></code>, <code class="docutils literal notranslate"><span class="pre">m_clear</span></code>, <code class="docutils literal notranslate"><span class="pre">m_free</span></code>. These work like
+<code class="docutils literal notranslate"><span class="pre">tp_traverse</span></code>, <code class="docutils literal notranslate"><span class="pre">tp_clear</span></code>, <code class="docutils literal notranslate"><span class="pre">tp_free</span></code> of a class. Adding them will
+require some work and make the code longer; this is the price for
+modules which can be unloaded cleanly.</p>
+<p>An example of a module with per-module state is currently available as
+<a class="reference external" href="https://github.com/python/cpython/blob/master/Modules/xxlimited.c">xxlimited</a>;
+example module initialization shown at the bottom of the file.</p>
+</section>
+<section id="opt-out-limiting-to-one-module-object-per-process">
+<h4><a class="toc-backref" href="#opt-out-limiting-to-one-module-object-per-process">Opt-Out: Limiting to One Module Object per Process</a></h4>
+<p>A non-negative <code class="docutils literal notranslate"><span class="pre">PyModuleDef.m_size</span></code> signals that a module supports
+multiple interpreters correctly. If this is not yet the case for your
+module, you can explicitly make your module loadable only once per
+process. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">static</span> <span class="nb">int</span> <span class="n">loaded</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+<span class="n">static</span> <span class="nb">int</span>
+<span class="n">exec_module</span><span class="p">(</span><span class="n">PyObject</span><span class="o">*</span> <span class="n">module</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">loaded</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">PyErr_SetString</span><span class="p">(</span><span class="n">PyExc_ImportError</span><span class="p">,</span>
+                        <span class="s2">&quot;cannot load module more than once per process&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">loaded</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="o">//</span> <span class="o">...</span> <span class="n">rest</span> <span class="n">of</span> <span class="n">initialization</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="module-state-access-from-functions">
+<h4><a class="toc-backref" href="#module-state-access-from-functions">Module State Access from Functions</a></h4>
+<p>Accessing the state from module-level functions is straightforward.
+Functions get the module object as their first argument; for extracting
+the state there is <code class="docutils literal notranslate"><span class="pre">PyModule_GetState</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">static</span> <span class="n">PyObject</span> <span class="o">*</span>
+<span class="n">func</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">module</span><span class="p">,</span> <span class="n">PyObject</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">my_struct</span> <span class="o">*</span><span class="n">state</span> <span class="o">=</span> <span class="p">(</span><span class="n">my_struct</span><span class="o">*</span><span class="p">)</span><span class="n">PyModule_GetState</span><span class="p">(</span><span class="n">module</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">state</span> <span class="o">==</span> <span class="n">NULL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">//</span> <span class="o">...</span> <span class="n">rest</span> <span class="n">of</span> <span class="n">logic</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>(Note that <code class="docutils literal notranslate"><span class="pre">PyModule_GetState</span></code> may return NULL without setting an
+exception if there is no module state, i.e. <code class="docutils literal notranslate"><span class="pre">PyModuleDef.m_size</span></code> was
+zero. In your own module, you’re in control of <code class="docutils literal notranslate"><span class="pre">m_size</span></code>, so this is
+easy to prevent.)</p>
+</section>
+<section id="heap-types">
+<h4><a class="toc-backref" href="#heap-types">Heap types</a></h4>
+<p>Traditionally, types defined in C code were <em>static</em>, that is,
+<code class="docutils literal notranslate"><span class="pre">static</span> <span class="pre">PyTypeObject</span></code> structures defined directly in code and
+initialized using <code class="docutils literal notranslate"><span class="pre">PyType_Ready()</span></code>.</p>
+<p>Such types are necessarily shared across the process. Sharing them
+between module objects requires paying attention to any state they own
+or access. To limit the possible issues, static types are immutable at
+the Python level: for example, you can’t set <code class="docutils literal notranslate"><span class="pre">str.myattribute</span> <span class="pre">=</span> <span class="pre">123</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Sharing truly immutable objects between interpreters is fine,
+as long as they don’t provide access to mutable objects. But, every
+Python object has a mutable implementation detail: the reference
+count. Changes to the refcount are guarded by the GIL. Thus, code
+that shares any Python objects across interpreters implicitly depends
+on CPython’s current, process-wide GIL.</p>
+</div>
+<p>An alternative to static types is <em>heap-allocated types</em>, or heap types
+for short. These correspond more closely to classes created by Python’s
+<code class="docutils literal notranslate"><span class="pre">class</span></code> statement.</p>
+<p>Heap types can be created by filling a <code class="docutils literal notranslate"><span class="pre">PyType_Spec</span></code> structure, a
+description or “blueprint” of a class, and calling
+<code class="docutils literal notranslate"><span class="pre">PyType_FromModuleAndSpec()</span></code> to construct a new class object.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Other functions, like <code class="docutils literal notranslate"><span class="pre">PyType_FromSpec()</span></code>, can also create
+heap types, but <code class="docutils literal notranslate"><span class="pre">PyType_FromModuleAndSpec()</span></code> associates the module
+with the class, allowing access to the module state from methods.</p>
+</div>
+<p>The class should generally be stored in <em>both</em> the module state (for
+safe access from C) and the module’s <code class="docutils literal notranslate"><span class="pre">__dict__</span></code> (for access from
+Python code).</p>
+</section>
+<section id="module-state-access-from-classes">
+<h4><a class="toc-backref" href="#module-state-access-from-classes">Module State Access from Classes</a></h4>
+<p>If you have a type object defined with <code class="docutils literal notranslate"><span class="pre">PyType_FromModuleAndSpec()</span></code>,
+you can call <code class="docutils literal notranslate"><span class="pre">PyType_GetModule</span></code> to get the associated module, then
+<code class="docutils literal notranslate"><span class="pre">PyModule_GetState</span></code> to get the module’s state.</p>
+<p>To save a some tedious error-handling boilerplate code, you can combine
+these two steps with <code class="docutils literal notranslate"><span class="pre">PyType_GetModuleState</span></code>, resulting in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">my_struct</span> <span class="o">*</span><span class="n">state</span> <span class="o">=</span> <span class="p">(</span><span class="n">my_struct</span><span class="o">*</span><span class="p">)</span><span class="n">PyType_GetModuleState</span><span class="p">(</span><span class="nb">type</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">state</span> <span class="o">===</span> <span class="n">NULL</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">NULL</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="module-state-access-from-regular-methods">
+<h4><a class="toc-backref" href="#module-state-access-from-regular-methods">Module State Access from Regular Methods</a></h4>
+<p>Accessing the module-level state from methods of a class is somewhat
+more complicated, but possible thanks to changes introduced in <a class="reference external" href="../pep-0573">PEP 573</a>.
+To get the state, you need to first get the <em>defining class</em>, and then
+get the module state from it.</p>
+<p>The largest roadblock is getting <em>the class a method was defined in</em>, or
+that method’s “defining class” for short. The defining class can have a
+reference to the module it is part of.</p>
+<p>Do not confuse the defining class with <code class="docutils literal notranslate"><span class="pre">Py_TYPE(self)</span></code>. If the method
+is called on a <em>subclass</em> of your type, <code class="docutils literal notranslate"><span class="pre">Py_TYPE(self)</span></code> will refer to
+that subclass, which may be defined in different module than yours.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following Python code. can illustrate the concept.
+<code class="docutils literal notranslate"><span class="pre">Base.get_defining_class</span></code> returns <code class="docutils literal notranslate"><span class="pre">Base</span></code> even
+if <code class="docutils literal notranslate"><span class="pre">type(self)</span> <span class="pre">==</span> <span class="pre">Sub</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">get_defining_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="vm">__class__</span>
+
+<span class="k">class</span> <span class="nc">Sub</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</div>
+<p>For a method to get its “defining class”, it must use the
+<code class="docutils literal notranslate"><span class="pre">METH_METHOD</span> <span class="pre">|</span> <span class="pre">METH_FASTCALL</span> <span class="pre">|</span> <span class="pre">METH_KEYWORDS</span></code> <a class="reference external" href="https://docs.python.org/3.9/c-api/structures.html?highlight=meth_o#c.PyMethodDef">calling
+convention</a>
+and the corresponding <a class="reference external" href="https://docs.python.org/3.9/c-api/structures.html#c.PyCMethod">PyCMethod
+signature</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PyObject</span> <span class="o">*</span><span class="n">PyCMethod</span><span class="p">(</span>
+    <span class="n">PyObject</span> <span class="o">*</span><span class="bp">self</span><span class="p">,</span>               <span class="o">//</span> <span class="nb">object</span> <span class="n">the</span> <span class="n">method</span> <span class="n">was</span> <span class="n">called</span> <span class="n">on</span>
+    <span class="n">PyTypeObject</span> <span class="o">*</span><span class="n">defining_class</span><span class="p">,</span> <span class="o">//</span> <span class="n">defining</span> <span class="k">class</span>
+    <span class="nc">PyObject</span> <span class="o">*</span><span class="n">const</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>        <span class="o">//</span> <span class="n">C</span> <span class="n">array</span> <span class="n">of</span> <span class="n">arguments</span>
+    <span class="n">Py_ssize_t</span> <span class="n">nargs</span><span class="p">,</span>             <span class="o">//</span> <span class="n">length</span> <span class="n">of</span> <span class="s2">&quot;args&quot;</span>
+    <span class="n">PyObject</span> <span class="o">*</span><span class="n">kwnames</span><span class="p">)</span>            <span class="o">//</span> <span class="n">NULL</span><span class="p">,</span> <span class="ow">or</span> <span class="nb">dict</span> <span class="n">of</span> <span class="n">keyword</span> <span class="n">arguments</span>
+</pre></div>
+</div>
+<p>Once you have the defining class, call <code class="docutils literal notranslate"><span class="pre">PyType_GetModuleState</span></code> to get
+the state of its associated module.</p>
+<p>For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">static</span> <span class="n">PyObject</span> <span class="o">*</span>
+<span class="n">example_method</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="bp">self</span><span class="p">,</span>
+        <span class="n">PyTypeObject</span> <span class="o">*</span><span class="n">defining_class</span><span class="p">,</span>
+        <span class="n">PyObject</span> <span class="o">*</span><span class="n">const</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">Py_ssize_t</span> <span class="n">nargs</span><span class="p">,</span>
+        <span class="n">PyObject</span> <span class="o">*</span><span class="n">kwnames</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">my_struct</span> <span class="o">*</span><span class="n">state</span> <span class="o">=</span> <span class="p">(</span><span class="n">my_struct</span><span class="o">*</span><span class="p">)</span><span class="n">PyType_GetModuleState</span><span class="p">(</span><span class="n">defining_class</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">state</span> <span class="o">===</span> <span class="n">NULL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="o">...</span> <span class="o">//</span> <span class="n">rest</span> <span class="n">of</span> <span class="n">logic</span>
+<span class="p">}</span>
+
+<span class="n">PyDoc_STRVAR</span><span class="p">(</span><span class="n">example_method_doc</span><span class="p">,</span> <span class="s2">&quot;...&quot;</span><span class="p">);</span>
+
+<span class="n">static</span> <span class="n">PyMethodDef</span> <span class="n">my_methods</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">{</span><span class="s2">&quot;example_method&quot;</span><span class="p">,</span>
+      <span class="p">(</span><span class="n">PyCFunction</span><span class="p">)(</span><span class="n">void</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="n">void</span><span class="p">))</span><span class="n">example_method</span><span class="p">,</span>
+      <span class="n">METH_METHOD</span><span class="o">|</span><span class="n">METH_FASTCALL</span><span class="o">|</span><span class="n">METH_KEYWORDS</span><span class="p">,</span>
+      <span class="n">example_method_doc</span><span class="p">}</span>
+    <span class="p">{</span><span class="n">NULL</span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="open-issues">
+<h3><a class="toc-backref" href="#open-issues">Open Issues</a></h3>
+<p>Several issues around per-module state and heap types are still open.</p>
+<p>Discussions about improving the situation are best held on the <a class="reference external" href="https://mail.python.org/mailman3/lists/capi-sig.python.org/">capi-sig
+mailing list</a>.</p>
+<section id="module-state-access-from-slot-methods-getters-and-setters">
+<h4><a class="toc-backref" href="#module-state-access-from-slot-methods-getters-and-setters">Module State Access from Slot Methods, Getters and Setters</a></h4>
+<p>Currently (as of Python 3.9), there is no API to access the module state
+from:</p>
+<ul class="simple">
+<li>slot methods (meaning type slots, such as <code class="docutils literal notranslate"><span class="pre">tp_new</span></code>, <code class="docutils literal notranslate"><span class="pre">nb_add</span></code> or
+<code class="docutils literal notranslate"><span class="pre">tp_iternext</span></code>)</li>
+<li>getters and setters defined with <code class="docutils literal notranslate"><span class="pre">tp_getset</span></code></li>
+</ul>
+</section>
+<section id="type-checking">
+<h4><a class="toc-backref" href="#type-checking">Type Checking</a></h4>
+<p>Currently (as of Python 3.9), heap types have no good API to write
+<code class="docutils literal notranslate"><span class="pre">Py*_Check</span></code> functions (like <code class="docutils literal notranslate"><span class="pre">PyUnicode_Check</span></code> exists for <code class="docutils literal notranslate"><span class="pre">str</span></code>, a
+static type), and so it is not easy to ensure whether instances have a
+particular C layout.</p>
+</section>
+<section id="metaclasses">
+<h4><a class="toc-backref" href="#metaclasses">Metaclasses</a></h4>
+<p>Currently (as of Python 3.9), there is no good API to specify the
+<em>metaclass</em> of a heap type, that is, the <code class="docutils literal notranslate"><span class="pre">ob_type</span></code> field of the type
+object.</p>
+</section>
+<section id="per-class-scope">
+<h4><a class="toc-backref" href="#per-class-scope">Per-Class scope</a></h4>
+<p>It is also not possible to attach state to <em>types</em>. While
+<code class="docutils literal notranslate"><span class="pre">PyHeapTypeObject</span></code> is a variable-size object (<code class="docutils literal notranslate"><span class="pre">PyVarObject</span></code>),
+its variable-size storage is currently consumed by slots. Fixing this
+is complicated by the fact that several classes in an inheritance
+hierarchy may need to reserve some state.</p>
+</section>
+</section>
+<section id="copyright">
+<h3><a class="toc-backref" href="#copyright">Copyright</a></h3>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0630.rst">https://github.com/python/peps/blob/master/pep-0630.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0630.rst">2021-02-03 14:06:23 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 630 – Isolating Extension Modules</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#isolating-extension-modules">Isolating Extension Modules</a><ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#about-this-document">About this document</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale-for-per-module-state">Rationale for Per-module State</a><ul>
+<li><a class="reference internal" href="#goal-easy-to-use-module-state">Goal: Easy-to-use Module State</a></li>
+<li><a class="reference internal" href="#non-goals-speedups-and-the-gil">Non-goals: Speedups and the GIL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-to-make-modules-safe-with-multiple-interpreters">How to make modules safe with multiple interpreters</a><ul>
+<li><a class="reference internal" href="#isolated-module-objects">Isolated Module Objects</a></li>
+<li><a class="reference internal" href="#surprising-edge-cases">Surprising Edge Cases</a></li>
+<li><a class="reference internal" href="#managing-global-state">Managing Global State</a></li>
+<li><a class="reference internal" href="#managing-per-module-state">Managing Per-Module State</a></li>
+<li><a class="reference internal" href="#opt-out-limiting-to-one-module-object-per-process">Opt-Out: Limiting to One Module Object per Process</a></li>
+<li><a class="reference internal" href="#module-state-access-from-functions">Module State Access from Functions</a></li>
+<li><a class="reference internal" href="#heap-types">Heap types</a></li>
+<li><a class="reference internal" href="#module-state-access-from-classes">Module State Access from Classes</a></li>
+<li><a class="reference internal" href="#module-state-access-from-regular-methods">Module State Access from Regular Methods</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a><ul>
+<li><a class="reference internal" href="#module-state-access-from-slot-methods-getters-and-setters">Module State Access from Slot Methods, Getters and Setters</a></li>
+<li><a class="reference internal" href="#type-checking">Type Checking</a></li>
+<li><a class="reference internal" href="#metaclasses">Metaclasses</a></li>
+<li><a class="reference internal" href="#per-class-scope">Per-Class scope</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0630.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

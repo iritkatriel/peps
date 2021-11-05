@@ -1,0 +1,242 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 356 – Python 2.5 Release Schedule | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 356 – Python 2.5 Release Schedule</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 356 – Python 2.5 Release Schedule</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">356</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Python 2.5 Release Schedule</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Neal Norwitz, Guido van Rossum, Anthony Baxter</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Informational</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">07-Feb-2006</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.5</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#release-manager">Release Manager</a></li>
+<li><a class="reference internal" href="#release-schedule">Release Schedule</a></li>
+<li><a class="reference internal" href="#completed-features-for-2-5">Completed features for 2.5</a></li>
+<li><a class="reference internal" href="#possible-features-for-2-5">Possible features for 2.5</a></li>
+<li><a class="reference internal" href="#deferred-until-2-6">Deferred until 2.6</a></li>
+<li><a class="reference internal" href="#open-issues">Open issues</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>This document describes the development and release schedule for
+Python 2.5.  The schedule primarily concerns itself with PEP-sized
+items.  Small features may be added up to and including the first
+beta release.  Bugs may be fixed until the final release.</p>
+<p>There will be at least two alpha releases, two beta releases, and
+one release candidate.  The release date is planned for
+12 September 2006.</p>
+</section>
+<section id="release-manager">
+<h2><a class="toc-backref" href="#release-manager">Release Manager</a></h2>
+<ul class="simple">
+<li>Anthony Baxter has volunteered to be Release Manager.</li>
+<li>Martin von Loewis is building the Windows installers,</li>
+<li>Ronald Oussoren is building the Mac installers,</li>
+<li>Fred Drake the doc packages and</li>
+<li>Sean Reifschneider the RPMs.</li>
+</ul>
+</section>
+<section id="release-schedule">
+<h2><a class="toc-backref" href="#release-schedule">Release Schedule</a></h2>
+<ul class="simple">
+<li>alpha 1: April 5, 2006 [completed]</li>
+<li>alpha 2: April 27, 2006 [completed]</li>
+<li>beta 1:  June 20, 2006 [completed]</li>
+<li>beta 2:  July 11, 2006 [completed]</li>
+<li>beta 3:  August 3, 2006 [completed]</li>
+<li>rc 1:    August 17, 2006 [completed]</li>
+<li>rc 2:    September 12, 2006 [completed]</li>
+<li>final:   September 19, 2006 [completed]</li>
+</ul>
+</section>
+<section id="completed-features-for-2-5">
+<h2><a class="toc-backref" href="#completed-features-for-2-5">Completed features for 2.5</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="../pep-0308">PEP 308</a>: Conditional Expressions</li>
+<li><a class="reference external" href="../pep-0309">PEP 309</a>: Partial Function Application</li>
+<li><a class="reference external" href="../pep-0314">PEP 314</a>: Metadata for Python Software Packages v1.1</li>
+<li><a class="reference external" href="../pep-0328">PEP 328</a>: Absolute/Relative Imports</li>
+<li><a class="reference external" href="../pep-0338">PEP 338</a>: Executing Modules as Scripts</li>
+<li><a class="reference external" href="../pep-0341">PEP 341</a>: Unified try-except/try-finally to try-except-finally</li>
+<li><a class="reference external" href="../pep-0342">PEP 342</a>: Coroutines via Enhanced Generators</li>
+<li><a class="reference external" href="../pep-0343">PEP 343</a>: The “with” Statement (still need updates in Doc/ref and for the
+<code class="docutils literal notranslate"><span class="pre">contextlib</span></code> module)</li>
+<li><a class="reference external" href="../pep-0352">PEP 352</a>: Required Superclass for Exceptions</li>
+<li><a class="reference external" href="../pep-0353">PEP 353</a>: Using <code class="docutils literal notranslate"><span class="pre">ssize_t</span></code> as the index type</li>
+<li><a class="reference external" href="../pep-0357">PEP 357</a>: Allowing Any Object to be Used for Slicing</li>
+<li>ASCII became the default coding</li>
+<li>AST-based compiler</li>
+<li>Access to C AST from Python through new <code class="docutils literal notranslate"><span class="pre">_ast</span></code> module</li>
+<li><code class="docutils literal notranslate"><span class="pre">any()</span></code>/<code class="docutils literal notranslate"><span class="pre">all()</span></code> builtin truth functions</li>
+</ul>
+<p>New standard library modules:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">cProfile</span></code> – suitable for profiling long running applications
+with minimal overhead</li>
+<li><code class="docutils literal notranslate"><span class="pre">ctypes</span></code> – optional component of the windows installer</li>
+<li><code class="docutils literal notranslate"><span class="pre">ElementTree</span></code> and <code class="docutils literal notranslate"><span class="pre">cElementTree</span></code> – by Fredrik Lundh</li>
+<li><code class="docutils literal notranslate"><span class="pre">hashlib</span></code> – adds support for SHA-224, -256, -384, and -512
+(replaces old <code class="docutils literal notranslate"><span class="pre">md5</span></code> and <code class="docutils literal notranslate"><span class="pre">sha</span></code> modules)</li>
+<li><code class="docutils literal notranslate"><span class="pre">msilib</span></code> – for creating MSI files and <code class="docutils literal notranslate"><span class="pre">bdist_msi</span></code> in distutils.</li>
+<li><code class="docutils literal notranslate"><span class="pre">pysqlite</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">uuid</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">wsgiref</span></code></li>
+</ul>
+<p>Other notable features:</p>
+<ul class="simple">
+<li>Added support for reading shadow passwords <a class="footnote-reference brackets" href="#id3" id="id1">1</a></li>
+<li>Added support for the Unicode 4.1 UCD</li>
+<li>Added <a class="reference external" href="../pep-0302">PEP 302</a> <code class="docutils literal notranslate"><span class="pre">zipfile</span></code>/<code class="docutils literal notranslate"><span class="pre">__loader__</span></code> support to the following modules:
+<code class="docutils literal notranslate"><span class="pre">warnings</span></code>, <code class="docutils literal notranslate"><span class="pre">linecache</span></code>, <code class="docutils literal notranslate"><span class="pre">inspect</span></code>, <code class="docutils literal notranslate"><span class="pre">traceback</span></code>, <code class="docutils literal notranslate"><span class="pre">site</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">doctest</span></code></li>
+<li>Added <code class="docutils literal notranslate"><span class="pre">pybench</span></code> Python benchmark suite – by Marc-Andre Lemburg</li>
+<li>Add write support for mailboxes from the code in sandbox/mailbox.
+(Owner: A.M. Kuchling.  It would still be good if another person
+would take a look at the new code.)</li>
+<li>Support for building “fat” Mac binaries (Intel and PPC)</li>
+<li>Add new icons for Windows with the new Python logo?</li>
+<li>New utilities in <code class="docutils literal notranslate"><span class="pre">functools</span></code> to help write wrapper functions that
+support naive introspection (e.g. having <code class="docutils literal notranslate"><span class="pre">f.__name__</span></code> return
+the original function name).</li>
+<li>Upgrade <code class="docutils literal notranslate"><span class="pre">pyexpat</span></code> to use expat 2.0.</li>
+<li>Python core now compiles cleanly with g++</li>
+</ul>
+</section>
+<section id="possible-features-for-2-5">
+<h2><a class="toc-backref" href="#possible-features-for-2-5">Possible features for 2.5</a></h2>
+<p>Each feature below should implemented prior to beta1 or
+will require BDFL approval for inclusion in 2.5.</p>
+<ul class="simple">
+<li>Modules under consideration for inclusion:</li>
+<li>Add new icons for MacOS and Unix with the new Python logo?
+(Owner: ???)
+MacOS: <a class="reference external" href="http://hcs.harvard.edu/~jrus/python/prettified-py-icons.png">http://hcs.harvard.edu/~jrus/python/prettified-py-icons.png</a></li>
+<li>Check the various bits of code in <code class="docutils literal notranslate"><span class="pre">Demo/</span></code> all still work, update or
+remove the ones that don’t.
+(Owner: Anthony)</li>
+<li>All modules in <code class="docutils literal notranslate"><span class="pre">Modules/</span></code> should be updated to be ssize_t clean.
+(Owner: Neal)</li>
+</ul>
+</section>
+<section id="deferred-until-2-6">
+<h2><a class="toc-backref" href="#deferred-until-2-6">Deferred until 2.6</a></h2>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">bdist_deb</span></code> in distutils package <a class="footnote-reference brackets" href="#id4" id="id2">2</a></li>
+<li><code class="docutils literal notranslate"><span class="pre">bdist_egg</span></code> in distutils package</li>
+<li>pure python <code class="docutils literal notranslate"><span class="pre">pgen</span></code> module
+(Owner: Guido)</li>
+<li>Remove the <code class="docutils literal notranslate"><span class="pre">fpectl</span></code> module?</li>
+<li>Make everything in <code class="docutils literal notranslate"><span class="pre">Modules/</span></code> build cleanly with g++</li>
+</ul>
+</section>
+<section id="open-issues">
+<h2><a class="toc-backref" href="#open-issues">Open issues</a></h2>
+<ul>
+<li>Bugs that need resolving before release, ie, they block release:<p>None</p>
+</li>
+<li>Bugs deferred until 2.5.1 (or later):<ul class="simple">
+<li><a class="reference external" href="https://bugs.python.org/issue1544279">https://bugs.python.org/issue1544279</a> - <code class="docutils literal notranslate"><span class="pre">Socket</span></code> module is not thread-safe</li>
+<li><a class="reference external" href="https://bugs.python.org/issue1541420">https://bugs.python.org/issue1541420</a> - tools and demo missing from windows</li>
+<li><a class="reference external" href="https://bugs.python.org/issue1542451">https://bugs.python.org/issue1542451</a> - crash with continue in nested try/finally</li>
+<li><a class="reference external" href="https://bugs.python.org/issue1475523">https://bugs.python.org/issue1475523</a> - gettext.py bug (owner: Martin v. Loewis)</li>
+<li><a class="reference external" href="https://bugs.python.org/issue1467929">https://bugs.python.org/issue1467929</a> - %-formatting and dicts</li>
+<li><a class="reference external" href="https://bugs.python.org/issue1446043">https://bugs.python.org/issue1446043</a> - <code class="docutils literal notranslate"><span class="pre">unicode()</span></code> does not raise <code class="docutils literal notranslate"><span class="pre">LookupError</span></code></li>
+</ul>
+</li>
+<li>The <a class="reference external" href="../pep-0302">PEP 302</a> changes to (at least) <code class="docutils literal notranslate"><span class="pre">pkgutil</span></code>, <code class="docutils literal notranslate"><span class="pre">runpy</span></code> and <code class="docutils literal notranslate"><span class="pre">pydoc</span></code> must
+be documented.</li>
+<li><code class="docutils literal notranslate"><span class="pre">test_zipfile64</span></code> takes too long and too much disk space for
+most of the buildbots.  How should this be handled?
+It is currently disabled.</li>
+<li>should C modules listed in “Undocumented modules” be removed too?
+“timing” (listed as obsolete), “cl” (listed as possibly not up-to-date),
+and “sv” (listed as obsolete hardware specific).</li>
+</ul>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>Shadow Password Support Module
+<a class="reference external" href="https://bugs.python.org/issue579435">https://bugs.python.org/issue579435</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Joe Smith, bdist_* to stdlib?
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2006-February/060926.html">https://mail.python.org/pipermail/python-dev/2006-February/060926.html</a></dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0356.txt">https://github.com/python/peps/blob/master/pep-0356.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0356.txt">2018-07-21 23:57:17 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 356 – Python 2.5 Release Schedule</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#release-manager">Release Manager</a></li>
+<li><a class="reference internal" href="#release-schedule">Release Schedule</a></li>
+<li><a class="reference internal" href="#completed-features-for-2-5">Completed features for 2.5</a></li>
+<li><a class="reference internal" href="#possible-features-for-2-5">Possible features for 2.5</a></li>
+<li><a class="reference internal" href="#deferred-until-2-6">Deferred until 2.6</a></li>
+<li><a class="reference internal" href="#open-issues">Open issues</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0356.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

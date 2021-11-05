@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 9 – Sample Plaintext PEP Template | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 9 – Sample Plaintext PEP Template</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 9 – Sample Plaintext PEP Template</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">9</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Sample Plaintext PEP Template</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Withdrawn</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">14-Aug-2001</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/mailman/private/peps/2016-January/001165.html">https://mail.python.org/mailman/private/peps/2016-January/001165.html</a></dd>
+</dl>
+<hr class="docutils" />
+<dl>
+<dt>::</dt><dd>Update<blockquote>
+<div>As of 05-Jan-2016, this PEP is officially deprecated and replaced
+by <a class="reference external" href="../pep-0012">PEP 12</a>.  All PEPs should now use the reStructuredText format
+described by <a class="reference external" href="../pep-0012">PEP 12</a>, and plaintext PEPs will no longer be
+accepted.</div></blockquote>
+<p>Abstract</p>
+<blockquote>
+<div>This PEP provides a boilerplate or sample template for creating
+your own plaintext PEPs.  In conjunction with the content
+guidelines in <a class="reference external" href="../pep-0001">PEP 1</a> [1], this should make it easy for you to
+conform your own PEPs to the format outlined below.<p>Note: if you are reading this PEP via the web, you should first
+grab the plaintext source of this PEP in order to complete the
+steps below.  DO NOT USE THE HTML FILE AS YOUR TEMPLATE!</p>
+<p>To get the source this (or any) PEP, look at the top of the HTML
+page and click on the date &amp; time on the “Last-Modified” line.  It
+is a link to the source text in the Python repository.</p>
+<p>If you would prefer to use lightweight markup in your PEP, please
+see <a class="reference external" href="../pep-0012">PEP 12</a>, “Sample reStructuredText PEP Template” [2].</p>
+</div></blockquote>
+<p>Rationale</p>
+<blockquote>
+<div>PEP submissions come in a wide variety of forms, not all adhering
+to the format guidelines set forth below.  Use this template, in
+conjunction with the content guidelines in <a class="reference external" href="../pep-0001">PEP 1</a>, to ensure that
+your PEP submission won’t get automatically rejected because of
+form.</div></blockquote>
+<p>How to Use This Template</p>
+<blockquote>
+<div>To use this template you must first decide whether your PEP is
+going to be an Informational or Standards Track PEP.  Most PEPs
+are Standards Track because they propose a new feature for the
+Python language or standard library.  When in doubt, read <a class="reference external" href="../pep-0001">PEP 1</a>
+for details or contact the PEP editors &lt;<a class="reference external" href="mailto:peps&#37;&#52;&#48;python&#46;org">peps<span>&#64;</span>python<span>&#46;</span>org</a>&gt;.<p>Once you’ve decided which type of PEP yours is going to be, follow
+the directions below.</p>
+<ul>
+<li>Make a copy of this file (.txt file, not HTML!) and perform the
+following edits.</li>
+<li>Replace the “PEP: 9” header with “PEP: XXX” since you don’t yet
+have a PEP number assignment.</li>
+<li>Change the Title header to the title of your PEP.</li>
+<li>Leave the Version and Last-Modified headers alone; we’ll take
+care of those when we check your PEP into Python’s Subversion
+repository.  These headers consist of keywords (“Revision” and
+“Date” enclosed in “$”-signs) which are automatically expanded
+by the repository.  Please do not edit the expanded date or
+revision text.</li>
+<li>Change the Author header to include your name, and optionally
+your email address.  Be sure to follow the format carefully:
+your name must appear first, and it must not be contained in
+parentheses.  Your email address may appear second (or it can be
+omitted) and if it appears, it must appear in angle brackets.
+It is okay to obfuscate your email address.</li>
+<li>If there is a mailing list for discussion of your new feature,
+add a Discussions-To header right after the Author header.  You
+should not add a Discussions-To header if the mailing list to be
+used is either <a class="reference external" href="mailto:python-list&#37;&#52;&#48;python&#46;org">python-list<span>&#64;</span>python<span>&#46;</span>org</a> or <a class="reference external" href="mailto:python-dev&#37;&#52;&#48;python&#46;org">python-dev<span>&#64;</span>python<span>&#46;</span>org</a>,
+or if discussions should be sent to you directly.  Most
+Informational PEPs don’t have a Discussions-To header.</li>
+<li>Change the Status header to “Draft”.</li>
+<li>For Standards Track PEPs, change the Type header to “Standards
+Track”.</li>
+<li>For Informational PEPs, change the Type header to
+“Informational”.</li>
+<li>For Standards Track PEPs, if your feature depends on the
+acceptance of some other currently in-development PEP, add a
+Requires header right after the Type header.  The value should
+be the PEP number of the PEP yours depends on.  Don’t add this
+header if your dependent feature is described in a Final PEP.</li>
+<li>Change the Created header to today’s date.  Be sure to follow
+the format carefully: it must be in dd-mmm-yyyy format, where
+the mmm is the 3 English letter month abbreviation, e.g. one of
+Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec.</li>
+<li>For Standards Track PEPs, after the Created header, add a
+Python-Version header and set the value to the next planned
+version of Python, i.e. the one your new feature will hopefully
+make its first appearance in.  Do not use an alpha or beta
+release designation here.  Thus, if the last version of Python
+was 2.2 alpha 1 and you’re hoping to get your new feature into
+Python 2.2, set the header to:<p>Python-Version: 2.2</p>
+</li>
+<li>Leave Post-History alone for now; you’ll add dates to this
+header each time you post your PEP to <a class="reference external" href="mailto:python-list&#37;&#52;&#48;python&#46;org">python-list<span>&#64;</span>python<span>&#46;</span>org</a> or
+<a class="reference external" href="mailto:python-dev&#37;&#52;&#48;python&#46;org">python-dev<span>&#64;</span>python<span>&#46;</span>org</a>.  E.g. if you posted your PEP to the lists
+on August 14, 2001 and September 3, 2001, the Post-History
+header would look like:<p>Post-History: 14-Aug-2001, 03-Sept-2001</p>
+<p>You must manually add new dates and check them in.  If you don’t
+have check-in privileges, send your changes to the PEP editor.</p>
+</li>
+<li>Add a Replaces header if your PEP obsoletes an earlier PEP.  The
+value of this header is the number of the PEP that your new PEP
+is replacing.  Only add this header if the older PEP is in
+“final” form, i.e. is either Accepted, Final, or Rejected.  You
+aren’t replacing an older open PEP if you’re submitting a
+competing idea.</li>
+<li>Now write your Abstract, Rationale, and other content for your
+PEP, replacing all this gobbledygook with your own text. Be sure
+to adhere to the format guidelines below, specifically on the
+prohibition of tab characters and the indentation requirements.</li>
+<li>Update your References and Copyright section.  Usually you’ll
+place your PEP into the public domain, in which case just leave
+the “Copyright” section alone.  Alternatively, you can use the
+Open Publication License[3], but public domain is still strongly
+preferred.</li>
+<li>Leave the little Emacs turd at the end of this file alone,
+including the formfeed character (“^L”, or f).</li>
+<li>Send your PEP submission to the PEP editors (<a class="reference external" href="mailto:peps&#37;&#52;&#48;python&#46;org">peps<span>&#64;</span>python<span>&#46;</span>org</a>),
+along with $100k in unmarked pennies.  (Just kidding, I wanted
+to see if you were still awake. :)</li>
+</ul>
+</div></blockquote>
+<p>Plaintext PEP Formatting Requirements</p>
+<blockquote>
+<div>PEP headings must begin in column zero and the initial letter of
+each word must be capitalized as in book titles.  Acronyms should
+be in all capitals.  The body of each section must be indented 4
+spaces.  Code samples inside body sections should be indented a
+further 4 spaces, and other indentation can be used as required to
+make the text readable.  You must use two blank lines between the
+last line of a section’s body and the next section heading.<p>You must adhere to the Emacs convention of adding two spaces at
+the end of every sentence.  You should fill your paragraphs to
+column 70, but under no circumstances should your lines extend
+past column 79.  If your code samples spill over column 79, you
+should rewrite them.</p>
+<p>Tab characters must never appear in the document at all.  A PEP
+should include the standard Emacs stanza included by example at
+the bottom of this PEP.</p>
+<p>When referencing an external web page in the body of a PEP, you
+should include the title of the page in the text, with a
+footnote reference to the URL.  Do not include the URL in the body
+text of the PEP.  E.g.</p>
+<blockquote>
+<div>Refer to the Python Language web site [1] for more details.
+…
+[1] <a class="reference external" href="http://www.python.org">http://www.python.org</a></div></blockquote>
+<p>When referring to another PEP, include the PEP number in the body
+text, such as “<a class="reference external" href="../pep-0001">PEP 1</a>”.  The title may optionally appear.  Add a
+footnote reference, a number in square brackets.  The footnote
+body should include the PEP’s title and author.  It may optionally
+include the explicit URL on a separate line, but only in the
+References section.  Note that the pep2html.py script will
+calculate URLs automatically.  For example:</p>
+<blockquote>
+<div><blockquote>
+<div>…
+Refer to <a class="reference external" href="../pep-0001">PEP 1</a> [7] for more information about PEP style
+…</div></blockquote>
+<p>References</p>
+<blockquote>
+<div><dl class="simple">
+<dt>[7] <a class="reference external" href="../pep-0001">PEP 1</a>, PEP Purpose and Guidelines, Warsaw, Hylton</dt><dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0001/">http://www.python.org/dev/peps/pep-0001/</a></dd>
+</dl>
+</div></blockquote>
+</div></blockquote>
+<p>If you decide to provide an explicit URL for a PEP, please use
+this as the URL template:</p>
+<blockquote>
+<div><a class="reference external" href="http://www.python.org/dev/peps/pep-xxxx/">http://www.python.org/dev/peps/pep-xxxx/</a></div></blockquote>
+<p>PEP numbers in URLs must be padded with zeros from the left, so as
+to be exactly 4 characters wide, however PEP numbers in the text
+are never padded.</p>
+</div></blockquote>
+<p>References</p>
+<blockquote>
+<div><dl class="simple">
+<dt>[1] <a class="reference external" href="../pep-0001">PEP 1</a>, PEP Purpose and Guidelines, Warsaw, Hylton</dt><dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0001/">http://www.python.org/dev/peps/pep-0001/</a></dd>
+<dt>[2] <a class="reference external" href="../pep-0012">PEP 12</a>, Sample reStructuredText PEP Template, Goodger, Warsaw</dt><dd><a class="reference external" href="http://www.python.org/dev/peps/pep-0012/">http://www.python.org/dev/peps/pep-0012/</a></dd>
+</dl>
+<p>[3] <a class="reference external" href="http://www.opencontent.org/openpub/">http://www.opencontent.org/openpub/</a></p>
+</div></blockquote>
+<p>Copyright</p>
+<blockquote>
+<div>This document has been placed in the public domain.</div></blockquote>
+</dd>
+</dl>
+<p>Local Variables:
+mode: indented-text
+indent-tabs-mode: nil
+sentence-end-double-space: t
+fill-column: 70
+coding: utf-8
+End:</p>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0009.txt">https://github.com/python/peps/blob/master/pep-0009.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0009.txt">2017-11-11 19:28:55 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 9 – Sample Plaintext PEP Template</a></li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0009.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

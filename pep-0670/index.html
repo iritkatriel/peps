@@ -1,0 +1,450 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 670 – Convert macros to functions in the Python C API | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 670 – Convert macros to functions in the Python C API</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 670 – Convert macros to functions in the Python C API</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">670</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Convert macros to functions in the Python C API</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Erlend Egeberg Aasland &lt;erlend.aasland&#32;&#97;t&#32;protonmail.com&gt;,
+Victor Stinner &lt;vstinner&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">19-Oct-2021</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.11</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#macro-pitfalls">Macro Pitfalls</a></li>
+<li><a class="reference internal" href="#performance-and-inlining">Performance and inlining</a><ul>
+<li><a class="reference internal" href="#debug-build">Debug build</a></li>
+<li><a class="reference internal" href="#force-inlining">Force inlining</a></li>
+<li><a class="reference internal" href="#disable-inlining">Disable inlining</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#convert-macros-to-static-inline-functions">Convert macros to static inline functions</a></li>
+<li><a class="reference internal" href="#convert-static-inline-functions-to-regular-functions">Convert static inline functions to regular functions</a></li>
+<li><a class="reference internal" href="#cast-to-pyobject">Cast to PyObject*</a></li>
+<li><a class="reference internal" href="#remove-the-return-value">Remove the return value</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#keep-macros-but-fix-some-macro-issues">Keep macros, but fix some macro issues</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples-of-hard-to-read-macros">Examples of hard to read macros</a><ul>
+<li><a class="reference internal" href="#py-newreference">_Py_NewReference()</a></li>
+<li><a class="reference internal" href="#pyobject-init">PyObject_INIT()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#macros-converted-to-functions-since-python-3-8">Macros converted to functions since Python 3.8</a><ul>
+<li><a class="reference internal" href="#macros-converted-to-static-inline-functions">Macros converted to static inline functions</a></li>
+<li><a class="reference internal" href="#macros-converted-to-regular-functions">Macros converted to regular functions</a></li>
+<li><a class="reference internal" href="#static-inline-functions-converted-to-regular-functions">Static inline functions converted to regular functions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>Convert macros to static inline functions or regular functions.</p>
+<p>Remove the return value of macros having a return value, whereas they
+should not, to aid detecting bugs in C extensions when the C API is
+misused.</p>
+<p>Some function arguments are still cast to <code class="docutils literal notranslate"><span class="pre">PyObject*</span></code> to prevent
+emitting new compiler warnings.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>The use of macros may have unintended adverse effects that are hard to
+avoid, even for experienced C developers. Some issues have been known
+for years, while others have been discovered recently in Python.
+Working around macro pitfalls makes the macro coder harder to read and
+to maintain.</p>
+<p>Converting macros to functions has multiple advantages:</p>
+<ul class="simple">
+<li>By design, functions don’t have macro pitfalls.</li>
+<li>Arguments type and return type are well defined.</li>
+<li>Debuggers and profilers can retrieve the name of inlined functions.</li>
+<li>Debuggers can put breakpoints on inlined functions.</li>
+<li>Variables have a well defined scope.</li>
+<li>Code is usually easier to read and to maintain than similar macro
+code.  Functions don’t need the following workarounds for macro
+pitfalls:<ul>
+<li>Add parentheses around arguments.</li>
+<li>Use line continuation characters if the function is written on
+multiple lines.</li>
+<li>Add commas to execute multiple expressions.</li>
+<li>Use <code class="docutils literal notranslate"><span class="pre">do</span> <span class="pre">{</span> <span class="pre">...</span> <span class="pre">}</span> <span class="pre">while</span> <span class="pre">(0)</span></code> to write multiple statements.</li>
+</ul>
+</li>
+</ul>
+<p>Converting macros and static inline functions to regular functions makes
+these regular functions accessible to projects which use Python but
+cannot use macros and static inline functions.</p>
+</section>
+<section id="macro-pitfalls">
+<h2><a class="toc-backref" href="#macro-pitfalls">Macro Pitfalls</a></h2>
+<p>The <a class="reference external" href="https://gcc.gnu.org/onlinedocs/cpp/Macro-Pitfalls.html">GCC documentation</a> lists several
+common macro pitfalls:</p>
+<ul class="simple">
+<li>Misnesting</li>
+<li>Operator precedence problems</li>
+<li>Swallowing the semicolon</li>
+<li>Duplication of side effects</li>
+<li>Self-referential macros</li>
+<li>Argument prescan</li>
+<li>Newlines in arguments</li>
+</ul>
+</section>
+<section id="performance-and-inlining">
+<h2><a class="toc-backref" href="#performance-and-inlining">Performance and inlining</a></h2>
+<p>Static inline functions is a feature added to the C99 standard. Modern C
+compilers have efficient heuristics to decide if a function should be
+inlined or not.</p>
+<p>When a C compiler decides to not inline, there is likely a good reason.
+For example, inlining would reuse a register which require to
+save/restore the register value on the stack and so increase the stack
+memory usage or be less efficient.</p>
+<section id="debug-build">
+<h3><a class="toc-backref" href="#debug-build">Debug build</a></h3>
+<p>When Python is built in debug mode, most compiler optimizations are
+disabled.  For example, Visual Studio disables inlining. Benchmarks must
+not be run on a Python debug build, only on release build: using LTO and
+PGO is recommended for reliable benchmarks. PGO helps the compiler to
+decide if function should be inlined or not.</p>
+</section>
+<section id="force-inlining">
+<h3><a class="toc-backref" href="#force-inlining">Force inlining</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">Py_ALWAYS_INLINE</span></code> macro can be used to force inlining. This macro
+uses <code class="docutils literal notranslate"><span class="pre">__attribute__((always_inline))</span></code> with GCC and Clang, and
+<code class="docutils literal notranslate"><span class="pre">__forceinline</span></code> with MSC.</p>
+<p>So far, previous attempts to use <code class="docutils literal notranslate"><span class="pre">Py_ALWAYS_INLINE</span></code> didn’t show any
+benefit and were abandoned. See for example: <a class="reference external" href="https://bugs.python.org/issue45094">bpo-45094</a>: “Consider using
+<code class="docutils literal notranslate"><span class="pre">__forceinline</span></code> and <code class="docutils literal notranslate"><span class="pre">__attribute__((always_inline))</span></code> on static
+inline functions (<code class="docutils literal notranslate"><span class="pre">Py_INCREF</span></code>, <code class="docutils literal notranslate"><span class="pre">Py_TYPE</span></code>) for debug build”.</p>
+<p>When the <code class="docutils literal notranslate"><span class="pre">Py_INCREF()</span></code> macro was converted to a static inline
+functions in 2018 (<a class="reference external" href="https://github.com/python/cpython/commit/2aaf0c12041bcaadd7f2cc5a54450eefd7a6ff12">commit</a>),
+it was decided not to force inlining. The machine code was analyzed with
+multiple C compilers and compiler options: <code class="docutils literal notranslate"><span class="pre">Py_INCREF()</span></code> was always
+inlined without having to force inlining. The only case where it was not
+inlined was the debug build. See discussion in the <a class="reference external" href="https://bugs.python.org/issue35059">bpo-35059</a>: “Convert <code class="docutils literal notranslate"><span class="pre">Py_INCREF()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">PyObject_INIT()</span></code> to inlined functions”.</p>
+</section>
+<section id="disable-inlining">
+<h3><a class="toc-backref" href="#disable-inlining">Disable inlining</a></h3>
+<p>On the other side, the <code class="docutils literal notranslate"><span class="pre">Py_NO_INLINE</span></code> macro can be used to disable
+inlining.  It is useful to reduce the stack memory usage. It is
+especially useful on a LTO+PGO build which is more aggressive to inline
+code: see <a class="reference external" href="https://bugs.python.org/issue33720">bpo-33720</a>. The
+<code class="docutils literal notranslate"><span class="pre">Py_NO_INLINE</span></code> macro uses <code class="docutils literal notranslate"><span class="pre">__attribute__</span> <span class="pre">((noinline))</span></code> with GCC and
+Clang, and <code class="docutils literal notranslate"><span class="pre">__declspec(noinline)</span></code> with MSC.</p>
+</section>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification">Specification</a></h2>
+<section id="convert-macros-to-static-inline-functions">
+<h3><a class="toc-backref" href="#convert-macros-to-static-inline-functions">Convert macros to static inline functions</a></h3>
+<p>Most macros should be converted to static inline functions to prevent
+<a class="reference internal" href="#macro-pitfalls">macro pitfalls</a>.</p>
+<p>The following macros should not be converted:</p>
+<ul class="simple">
+<li>Empty macros. Example: <code class="docutils literal notranslate"><span class="pre">#define</span> <span class="pre">Py_HAVE_CONDVAR</span></code>.</li>
+<li>Macros only defining a number, even if a constant with a well defined
+type can better. Example: <code class="docutils literal notranslate"><span class="pre">#define</span> <span class="pre">METH_VARARGS</span> <span class="pre">0x0001</span></code>.</li>
+<li>Compatibility layer for different C compilers, C language extensions,
+or recent C features.
+Example: <code class="docutils literal notranslate"><span class="pre">#define</span> <span class="pre">Py_ALWAYS_INLINE</span> <span class="pre">__attribute__((always_inline))</span></code>.</li>
+</ul>
+</section>
+<section id="convert-static-inline-functions-to-regular-functions">
+<h3><a class="toc-backref" href="#convert-static-inline-functions-to-regular-functions">Convert static inline functions to regular functions</a></h3>
+<p>The performance impact of converting static inline functions to regular
+functions should be measured with benchmarks. If there is a significant
+slowdown, there should be a good reason to do the conversion. One reason
+can be hiding implementation details.</p>
+<p>Using static inline functions in the internal C API is fine: the
+internal C API exposes implemenation details by design and should not be
+used outside Python.</p>
+</section>
+<section id="cast-to-pyobject">
+<h3><a class="toc-backref" href="#cast-to-pyobject">Cast to PyObject*</a></h3>
+<p>When a macro is converted to a function and the macro casts its
+arguments to <code class="docutils literal notranslate"><span class="pre">PyObject*</span></code>, the new function comes with a new macro
+which cast arguments to <code class="docutils literal notranslate"><span class="pre">PyObject*</span></code> to prevent emitting new compiler
+warnings. So the converted functions still accept pointers to structures
+inheriting from <code class="docutils literal notranslate"><span class="pre">PyObject</span></code> (ex: <code class="docutils literal notranslate"><span class="pre">PyTupleObject</span></code>).</p>
+<p>For example, the <code class="docutils literal notranslate"><span class="pre">Py_TYPE(obj)</span></code> macro casts its <code class="docutils literal notranslate"><span class="pre">obj</span></code> argument to
+<code class="docutils literal notranslate"><span class="pre">PyObject*</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define _PyObject_CAST_CONST(op) ((const PyObject*)(op))</span>
+
+<span class="n">static</span> <span class="n">inline</span> <span class="n">PyTypeObject</span><span class="o">*</span> <span class="n">_Py_TYPE</span><span class="p">(</span><span class="n">const</span> <span class="n">PyObject</span> <span class="o">*</span><span class="n">ob</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">ob</span><span class="o">-&gt;</span><span class="n">ob_type</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="c1">#define Py_TYPE(ob) _Py_TYPE(_PyObject_CAST_CONST(ob))</span>
+</pre></div>
+</div>
+<p>The undocumented private <code class="docutils literal notranslate"><span class="pre">_Py_TYPE()</span></code> function must not be called
+directly. Only the documented public <code class="docutils literal notranslate"><span class="pre">Py_TYPE()</span></code> macro must be used.</p>
+<p>Later, the cast can be removed on a case by case basis, but that is out
+of scope for this PEP.</p>
+</section>
+<section id="remove-the-return-value">
+<h3><a class="toc-backref" href="#remove-the-return-value">Remove the return value</a></h3>
+<p>When a macro is implemented as an expression, it has an implicit return
+value. In some cases, the macro must not have a return value and can be
+misused in third party C extensions. See <a class="reference external" href="https://bugs.python.org/issue30459">bpo-30459</a> for the example of
+<code class="docutils literal notranslate"><span class="pre">PyList_SET_ITEM()</span></code> and <code class="docutils literal notranslate"><span class="pre">PyCell_SET()</span></code> macros. It is not easy to
+notice this issue while reviewing macro code.</p>
+<p>These macros are converted to functions using the <code class="docutils literal notranslate"><span class="pre">void</span></code> return type
+to remove their return value. Removing the return value aids detecting
+bugs in C extensions when the C API is misused.</p>
+</section>
+</section>
+<section id="backwards-compatibility">
+<h2><a class="toc-backref" href="#backwards-compatibility">Backwards Compatibility</a></h2>
+<p>Removing the return value of macros is an incompatible API change made
+on purpose: see the <a class="reference internal" href="#remove-the-return-value">Remove the return value</a> section.</p>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#rejected-ideas">Rejected Ideas</a></h2>
+<section id="keep-macros-but-fix-some-macro-issues">
+<h3><a class="toc-backref" href="#keep-macros-but-fix-some-macro-issues">Keep macros, but fix some macro issues</a></h3>
+<p>Converting macros to functions is not needed to <a class="reference internal" href="#remove-the-return-value">remove the return
+value</a>: casting a macro return value to <code class="docutils literal notranslate"><span class="pre">void</span></code> also fix the issue.
+For example, the <code class="docutils literal notranslate"><span class="pre">PyList_SET_ITEM()</span></code> macro was already fixed like
+that.</p>
+<p>Macros are always “inlined” with any C compiler.</p>
+<p>The duplication of side effects can be worked around in the caller of
+the macro.</p>
+<p>People using macros should be considered “consenting adults”. People who
+feel unsafe with macros should simply not use them.</p>
+</section>
+</section>
+<section id="examples-of-hard-to-read-macros">
+<h2><a class="toc-backref" href="#examples-of-hard-to-read-macros">Examples of hard to read macros</a></h2>
+<section id="py-newreference">
+<h3><a class="toc-backref" href="#py-newreference">_Py_NewReference()</a></h3>
+<p>Example showing the usage of an <code class="docutils literal notranslate"><span class="pre">#ifdef</span></code> inside a macro.</p>
+<p>Python 3.7 macro (simplified code):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#ifdef COUNT_ALLOCS</span>
+<span class="c1">#  define _Py_INC_TPALLOCS(OP) inc_count(Py_TYPE(OP))</span>
+<span class="c1">#  define _Py_COUNT_ALLOCS_COMMA  ,</span>
+<span class="c1">#else</span>
+<span class="c1">#  define _Py_INC_TPALLOCS(OP)</span>
+<span class="c1">#  define _Py_COUNT_ALLOCS_COMMA</span>
+<span class="c1">#endif /* COUNT_ALLOCS */</span>
+
+<span class="c1">#define _Py_NewReference(op) (                   \</span>
+    <span class="n">_Py_INC_TPALLOCS</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="n">_Py_COUNT_ALLOCS_COMMA</span>  \
+    <span class="n">Py_REFCNT</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Python 3.8 function (simplified code):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">static</span> <span class="n">inline</span> <span class="n">void</span> <span class="n">_Py_NewReference</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">op</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">_Py_INC_TPALLOCS</span><span class="p">(</span><span class="n">op</span><span class="p">);</span>
+    <span class="n">Py_REFCNT</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="pyobject-init">
+<h3><a class="toc-backref" href="#pyobject-init">PyObject_INIT()</a></h3>
+<p>Example showing the usage of commas in a macro.</p>
+<p>Python 3.7 macro:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">#define PyObject_INIT(op, typeobj) \</span>
+    <span class="p">(</span> <span class="n">Py_TYPE</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">typeobj</span><span class="p">),</span> <span class="n">_Py_NewReference</span><span class="p">((</span><span class="n">PyObject</span> <span class="o">*</span><span class="p">)(</span><span class="n">op</span><span class="p">)),</span> <span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>Python 3.8 function (simplified code):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">static</span> <span class="n">inline</span> <span class="n">PyObject</span><span class="o">*</span>
+<span class="n">_PyObject_INIT</span><span class="p">(</span><span class="n">PyObject</span> <span class="o">*</span><span class="n">op</span><span class="p">,</span> <span class="n">PyTypeObject</span> <span class="o">*</span><span class="n">typeobj</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">Py_TYPE</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="o">=</span> <span class="n">typeobj</span><span class="p">;</span>
+    <span class="n">_Py_NewReference</span><span class="p">(</span><span class="n">op</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">op</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">#define PyObject_INIT(op, typeobj) \</span>
+    <span class="n">_PyObject_INIT</span><span class="p">(</span><span class="n">_PyObject_CAST</span><span class="p">(</span><span class="n">op</span><span class="p">),</span> <span class="p">(</span><span class="n">typeobj</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The function doesn’t need the line continuation character. It has an
+explicit <code class="docutils literal notranslate"><span class="pre">&quot;return</span> <span class="pre">op;&quot;</span></code> rather than a surprising <code class="docutils literal notranslate"><span class="pre">&quot;,</span> <span class="pre">(op)&quot;</span></code> at the
+end of the macro.  It uses one short statement per line, rather than a
+single long line. Inside the function, the <em>op</em> argument has a well
+defined type: <code class="docutils literal notranslate"><span class="pre">PyObject*</span></code>.</p>
+</section>
+</section>
+<section id="macros-converted-to-functions-since-python-3-8">
+<h2><a class="toc-backref" href="#macros-converted-to-functions-since-python-3-8">Macros converted to functions since Python 3.8</a></h2>
+<section id="macros-converted-to-static-inline-functions">
+<h3><a class="toc-backref" href="#macros-converted-to-static-inline-functions">Macros converted to static inline functions</a></h3>
+<p>Python 3.8:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Py_DECREF()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Py_INCREF()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Py_XDECREF()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Py_XINCREF()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_INIT()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_INIT_VAR()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyObject_GC_UNTRACK()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_Py_Dealloc()</span></code></li>
+</ul>
+<p>Python 3.10:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Py_REFCNT()</span></code></li>
+</ul>
+<p>Python 3.11:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Py_TYPE()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Py_SIZE()</span></code></li>
+</ul>
+</section>
+<section id="macros-converted-to-regular-functions">
+<h3><a class="toc-backref" href="#macros-converted-to-regular-functions">Macros converted to regular functions</a></h3>
+<p>Python 3.9:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyIndex_Check()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_CheckBuffer()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_GET_WEAKREFS_LISTPTR()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_IS_GC()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_NEW()</span></code>: alias to <code class="docutils literal notranslate"><span class="pre">PyObject_New()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_NEW_VAR()</span></code>: alias to <code class="docutils literal notranslate"><span class="pre">PyObjectVar_New()</span></code></li>
+</ul>
+<p>To avoid any risk of performance slowdown on Python built without LTO,
+private static inline functions have been added to the internal C API:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">_PyIndex_Check()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyObject_IS_GC()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyType_HasFeature()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyType_IS_GC()</span></code></li>
+</ul>
+</section>
+<section id="static-inline-functions-converted-to-regular-functions">
+<h3><a class="toc-backref" href="#static-inline-functions-converted-to-regular-functions">Static inline functions converted to regular functions</a></h3>
+<p>Python 3.11:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_CallOneArg()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyObject_Vectorcall()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">PyVectorcall_Function()</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">_PyObject_FastCall()</span></code></li>
+</ul>
+<p>To avoid any risk of performance slowdown on Python built without LTO, a
+private static inline function has been added to the internal C API:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">_PyVectorcall_FunctionInline()</span></code></li>
+</ul>
+</section>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://bugs.python.org/issue45490">bpo-45490</a>:
+[meta][C API] Avoid C macro pitfalls and usage of static inline
+functions (October 2021).</li>
+<li><a class="reference external" href="https://discuss.python.org/t/what-to-do-with-unsafe-macros/7771">What to do with unsafe macros</a>
+(March 2021).</li>
+<li><a class="reference external" href="https://bugs.python.org/issue43502">bpo-43502</a>:
+[C-API] Convert obvious unsafe macros to static inline functions
+(March 2021).</li>
+</ul>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0670.rst">https://github.com/python/peps/blob/master/pep-0670.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0670.rst">2021-10-20 13:55:51 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 670 – Convert macros to functions in the Python C API</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#macro-pitfalls">Macro Pitfalls</a></li>
+<li><a class="reference internal" href="#performance-and-inlining">Performance and inlining</a><ul>
+<li><a class="reference internal" href="#debug-build">Debug build</a></li>
+<li><a class="reference internal" href="#force-inlining">Force inlining</a></li>
+<li><a class="reference internal" href="#disable-inlining">Disable inlining</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#convert-macros-to-static-inline-functions">Convert macros to static inline functions</a></li>
+<li><a class="reference internal" href="#convert-static-inline-functions-to-regular-functions">Convert static inline functions to regular functions</a></li>
+<li><a class="reference internal" href="#cast-to-pyobject">Cast to PyObject*</a></li>
+<li><a class="reference internal" href="#remove-the-return-value">Remove the return value</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#keep-macros-but-fix-some-macro-issues">Keep macros, but fix some macro issues</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples-of-hard-to-read-macros">Examples of hard to read macros</a><ul>
+<li><a class="reference internal" href="#py-newreference">_Py_NewReference()</a></li>
+<li><a class="reference internal" href="#pyobject-init">PyObject_INIT()</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#macros-converted-to-functions-since-python-3-8">Macros converted to functions since Python 3.8</a><ul>
+<li><a class="reference internal" href="#macros-converted-to-static-inline-functions">Macros converted to static inline functions</a></li>
+<li><a class="reference internal" href="#macros-converted-to-regular-functions">Macros converted to regular functions</a></li>
+<li><a class="reference internal" href="#static-inline-functions-converted-to-regular-functions">Static inline functions converted to regular functions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0670.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

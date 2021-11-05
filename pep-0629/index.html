@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 629 – Versioning PyPI’s Simple API | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 629 – Versioning PyPI’s Simple API</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 629 – Versioning PyPI’s Simple API</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">629</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Versioning PyPI’s Simple API</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Donald Stufft &lt;donald&#32;&#97;t&#32;stufft.io&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/pep-629-versioning-pypis-simple-api/4720">https://discuss.python.org/t/pep-629-versioning-pypis-simple-api/4720</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">16-Jul-2020</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">16-Jul-2020</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#overview">Overview</a><ul>
+<li><a class="reference internal" href="#clients">Clients</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#using-a-header">Using a Header</a></li>
+<li><a class="reference internal" href="#using-an-url">Using an URL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This PEP was
+<a class="reference external" href="https://discuss.python.org/t/pep-629-versioning-pypis-simple-api/4720/15">accepted on 2020-08-20</a>.
+PyPI <a class="reference external" href="2bfa5a8c75e3af218494fe8de1eb809a43e3bbb9">merged an implementation</a>
+on 2020-01-28, marking this PEP as “Final”.</p>
+</div>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>This PEP proposes adding a method for versioning the simple API so
+that clients can determine which features of the simple API that a
+specific repository supports.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>When evolving the simple API, clients wish to be able to determine
+which features the repository supports. Currently there is no
+mechanism to do this, except by attempting to detect new features
+by looking at the data in the responses and see if it appears like
+a particular feature is in use.</p>
+<p>This works reasonably well for a modern version of a client to determine
+if the repository supports all of the features it wants to implement,
+however it does not do anything to tell an older version the client that
+the repository supports features that it might not understand and to
+allow messaging to indicate that it might not be correctly understanding
+the output of the repository.</p>
+<p>An example of a scenario where this happened was the phasing in of
+python-requires metadata, while existing clients could still successfully
+use the repository, they were lacking the ability to understand this new
+piece of data which would have informed their behavior to select a better
+file for end users.</p>
+</section>
+<section id="overview">
+<h2><a class="toc-backref" href="#overview">Overview</a></h2>
+<p>This PEP proposes the inclusion of a meta tag on the responses of every
+successful request to a simple API page, which contains a name attribute
+of “pypi:repository-version”, and a content that is a <a class="reference external" href="../pep-0440">PEP 440</a> compatible
+version number, which is further constrained to ONLY be Major.Minor, and
+none of the additional features supported by <a class="reference external" href="../pep-0440">PEP 440</a>.</p>
+<p>This would end up looking like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">meta</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;pypi:repository-version&quot;</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;1.0&quot;</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>When interpreting the repository version:</p>
+<ul class="simple">
+<li>Incrementing the major version is used to signal a backwards
+incompatible change such that existing clients would no longer be
+expected to be able to meaningfully use the API.</li>
+<li>Incrementing the minor version is used to signal a backwards
+compatible change such that existing clients would still be
+expected to be able to meaningfully use the API.</li>
+</ul>
+<p>It is left up to the discretion of any future PEPs as to what
+specifically constitutes a backwards incompatible vs compatible change
+beyond the broad suggestion that existing clients will be able to
+“meaningfully” continue to use the API, and can include adding,
+modifying, or removing existing features.</p>
+<p>It is expectation of this PEP that the major version will never be
+incremented, and any future major API evolutions would utilize a
+different mechanism for API evolution. However the major version
+is included to disambiguate with future versions (e.g. a hypothetical
+simple api v2 that lived at /v2/, but which would be confusing if the
+repository-version was set to a version &gt;= 2).</p>
+<p>This PEP sets the current API version to “1.0”, and expects that
+future PEPs that further evolve the simple API will increment the
+minor version number.</p>
+<section id="clients">
+<h3><a class="toc-backref" href="#clients">Clients</a></h3>
+<p>Clients interacting with the simple API <strong>SHOULD</strong> introspect each
+response for the repository version, and if that data does not exist
+<strong>MUST</strong> assume that it is version 1.0.</p>
+<p>When encountering a major version greater than expected, clients
+<strong>MUST</strong> hard fail with an appropriate error message for the user.</p>
+<p>When encountering a minor version greater than expected, clients
+<strong>SHOULD</strong> warn users with an appropriate message.</p>
+<p>Clients <strong>MAY</strong> still continue to use feature detection in order to
+determine what features a repository uses.</p>
+</section>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#rejected-ideas">Rejected Ideas</a></h2>
+<section id="using-a-header">
+<h3><a class="toc-backref" href="#using-a-header">Using a Header</a></h3>
+<p>Instead of baking this information into the actual HTML, an
+alternative would be to use a HTTP header. This idea was
+considered and ultimately was rejected because it would make
+mirrors have to start modifying headers instead of being able
+to operate as a “dumb” HTTP server of files.</p>
+</section>
+<section id="using-an-url">
+<h3><a class="toc-backref" href="#using-an-url">Using an URL</a></h3>
+<p>Another traditional mechanism for versioning APIs is to bake it
+into the URL, something like <code class="docutils literal notranslate"><span class="pre">/1.0/simple/</span></code> or so. This works
+well for major version changes where olders clients are not
+expected to be capable of continuing to use it, but it is not
+well suited to minor version bumps, particularly when the version
+numbers can be viewed as largely advisory for end users.</p>
+</section>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0629.rst">https://github.com/python/peps/blob/master/pep-0629.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0629.rst">2021-02-03 14:06:23 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 629 – Versioning PyPI’s Simple API</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#overview">Overview</a><ul>
+<li><a class="reference internal" href="#clients">Clients</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#using-a-header">Using a Header</a></li>
+<li><a class="reference internal" href="#using-an-url">Using an URL</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0629.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 239 – Adding a Rational Type to Python | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 239 – Adding a Rational Type to Python</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 239 – Adding a Rational Type to Python</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">239</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Adding a Rational Type to Python</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Christopher A. Craig &lt;python-pep&#32;&#97;t&#32;ccraig.org&gt;, Moshe Zadka &lt;moshez&#32;&#97;t&#32;zadka.site.co.il&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Rejected</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">11-Mar-2001</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">2.2</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even">16-Mar-2001</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncement">BDFL Pronouncement</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#rationaltype">RationalType</a></li>
+<li><a class="reference internal" href="#the-rational-builtin">The rational() Builtin</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>Python has no numeric type with the semantics of an unboundedly
+precise rational number.  This proposal explains the semantics of
+such a type, and suggests builtin functions and literals to
+support such a type.  This PEP suggests no literals for rational
+numbers; that is left for another PEP <a class="footnote-reference brackets" href="#id3" id="id1">1</a>.</p>
+</section>
+<section id="bdfl-pronouncement">
+<h2><a class="toc-backref" href="#bdfl-pronouncement">BDFL Pronouncement</a></h2>
+<p>This PEP is rejected.  The needs outlined in the rationale section
+have been addressed to some extent by the acceptance of <a class="reference external" href="../pep-0327">PEP 327</a>
+for decimal arithmetic.  Guido also noted, “Rational arithmetic
+was the default ‘exact’ arithmetic in ABC and it did not work out as
+expected”.  See the python-dev discussion on 17 June 2005 <a class="footnote-reference brackets" href="#id4" id="id2">2</a>.</p>
+<p><em>Postscript:</em> With the acceptance of <a class="reference external" href="../pep-3141">PEP 3141</a>, “A Type Hierarchy
+for Numbers”, a ‘Rational’ numeric abstract base class was added
+with a concrete implementation in the ‘fractions’ module.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>While sometimes slower and more memory intensive (in general,
+unboundedly so) rational arithmetic captures more closely the
+mathematical ideal of numbers, and tends to have behavior which is
+less surprising to newbies.  Though many Python implementations of
+rational numbers have been written, none of these exist in the
+core, or are documented in any way.  This has made them much less
+accessible to people who are less Python-savvy.</p>
+</section>
+<section id="rationaltype">
+<h2><a class="toc-backref" href="#rationaltype">RationalType</a></h2>
+<p>There will be a new numeric type added called <code class="docutils literal notranslate"><span class="pre">RationalType</span></code>.  Its
+unary operators will do the obvious thing.  Binary operators will
+coerce integers and long integers to rationals, and rationals to
+floats and complexes.</p>
+<p>The following attributes will be supported: <code class="docutils literal notranslate"><span class="pre">.numerator</span></code> and
+<code class="docutils literal notranslate"><span class="pre">.denominator</span></code>.  The language definition will promise that:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">r</span><span class="o">.</span><span class="n">denominator</span> <span class="o">*</span> <span class="n">r</span> <span class="o">==</span> <span class="n">r</span><span class="o">.</span><span class="n">numerator</span>
+</pre></div>
+</div>
+<p>that the GCD of the numerator and the denominator is 1 and that
+the denominator is positive.</p>
+<p>The method <code class="docutils literal notranslate"><span class="pre">r.trim(max_denominator)</span></code> will return the closest
+rational <code class="docutils literal notranslate"><span class="pre">s</span></code> to <code class="docutils literal notranslate"><span class="pre">r</span></code> such that <code class="docutils literal notranslate"><span class="pre">abs(s.denominator)</span> <span class="pre">&lt;=</span> <span class="pre">max_denominator</span></code>.</p>
+</section>
+<section id="the-rational-builtin">
+<h2><a class="toc-backref" href="#the-rational-builtin">The rational() Builtin</a></h2>
+<p>This function will have the signature <code class="docutils literal notranslate"><span class="pre">rational(n,</span> <span class="pre">d=1)</span></code>.  <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">d</span></code>
+must both be integers, long integers or rationals.  A guarantee is
+made that:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rational</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span> <span class="o">*</span> <span class="n">d</span> <span class="o">==</span> <span class="n">n</span>
+</pre></div>
+</div>
+</section>
+<section id="open-issues">
+<h2><a class="toc-backref" href="#open-issues">Open Issues</a></h2>
+<ul>
+<li>Maybe the type should be called rat instead of rational.
+Somebody proposed that we have “abstract” pure mathematical
+types named complex, real, rational, integer, and “concrete”
+representation types with names like float, rat, long, int.</li>
+<li>Should a rational number with an integer value be allowed as a
+sequence index?  For example, should <code class="docutils literal notranslate"><span class="pre">s[5/3</span> <span class="pre">-</span> <span class="pre">2/3]</span></code> be equivalent
+to <code class="docutils literal notranslate"><span class="pre">s[1]</span></code>?</li>
+<li>Should <code class="docutils literal notranslate"><span class="pre">shift</span></code> and <code class="docutils literal notranslate"><span class="pre">mask</span></code> operators be allowed for rational numbers?
+For rational numbers with integer values?</li>
+<li>Marcin ‘Qrczak’ Kowalczyk summarized the arguments for and
+against unifying ints with rationals nicely on c.l.py<p>Arguments for unifying ints with rationals:</p>
+<ul class="simple">
+<li>Since <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">==</span> <span class="pre">2/1</span></code> and maybe <code class="docutils literal notranslate"><span class="pre">str(2/1)</span> <span class="pre">==</span> <span class="pre">'2'</span></code>, it reduces surprises
+where objects seem equal but behave differently.</li>
+<li><code class="docutils literal notranslate"><span class="pre">/</span></code> can be freely used for integer division when I <em>know</em> that
+there is no remainder (if I am wrong and there is a remainder,
+there will probably be some exception later).</li>
+</ul>
+<p>Arguments against:</p>
+<ul class="simple">
+<li>When I use the result of <code class="docutils literal notranslate"><span class="pre">/</span></code> as a sequence index, it’s usually
+an error which should not be hidden by making the program
+working for some data, since it will break for other data.</li>
+<li>(this assumes that after unification int and rational would be
+different types:) Types should rarely depend on values. It’s
+easier to reason when the type of a variable is known: I know
+how I can use it. I can determine that something is an int and
+expect that other objects used in this place will be ints too.</li>
+<li>(this assumes the same type for them:) Int is a good type in
+itself, not to be mixed with rationals.  The fact that
+something is an integer should be expressible as a statement
+about its type. Many operations require ints and don’t accept
+rationals. It’s natural to think about them as about different
+types.</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><a class="reference external" href="../pep-0240">PEP 240</a>, Adding a Rational Literal to Python, Zadka,
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0240/">http://www.python.org/dev/peps/pep-0240/</a></dd>
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>Raymond Hettinger, Propose rejection of PEPs 239 and 240 – a builtin
+rational type and rational literals
+<a class="reference external" href="https://mail.python.org/pipermail/python-dev/2005-June/054281.html">https://mail.python.org/pipermail/python-dev/2005-June/054281.html</a></dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0239.txt">https://github.com/python/peps/blob/master/pep-0239.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0239.txt">2017-11-11 19:28:55 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 239 – Adding a Rational Type to Python</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#bdfl-pronouncement">BDFL Pronouncement</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#rationaltype">RationalType</a></li>
+<li><a class="reference internal" href="#the-rational-builtin">The rational() Builtin</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0239.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

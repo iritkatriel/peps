@@ -1,0 +1,892 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 665 – A file format to list Python dependencies for reproducibility of an application | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 665 – A file format to list Python dependencies for reproducibility of an application</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 665 – A file format to list Python dependencies for reproducibility of an application</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">665</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">A file format to list Python dependencies for reproducibility of an application</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Brett Cannon &lt;brett&#32;&#97;t&#32;python.org&gt;,
+Pradyun Gedam &lt;pradyunsg&#32;&#97;t&#32;gmail.com&gt;,
+Tzu-ping Chung &lt;uranusjr&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">PEP-Delegate</dt>
+<dd class="field-even">Paul Moore &lt;p.f.moore&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-odd">Discussions-To</dt>
+<dd class="field-odd"><a class="reference external" href="https://discuss.python.org/t/9911">https://discuss.python.org/t/9911</a></dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">29-Jul-2021</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd">29-Jul-2021, 03-Nov-2021</dd>
+<dt class="field-even">Resolution</dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#terminology">Terminology</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#file-format">File Format</a></li>
+<li><a class="reference internal" href="#secure-by-design">Secure by Design</a></li>
+<li><a class="reference internal" href="#cross-platform">Cross-Platform</a></li>
+<li><a class="reference internal" href="#simple-installer">Simple Installer</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#details">Details</a><ul>
+<li><a class="reference internal" href="#version"><code class="docutils literal notranslate"><span class="pre">version</span></code></a></li>
+<li><a class="reference internal" href="#created-at"><code class="docutils literal notranslate"><span class="pre">created-at</span></code></a></li>
+<li><a class="reference internal" href="#tool"><code class="docutils literal notranslate"><span class="pre">[tool]</span></code></a></li>
+<li><a class="reference internal" href="#metadata"><code class="docutils literal notranslate"><span class="pre">[metadata]</span></code></a><ul>
+<li><a class="reference internal" href="#metadata-marker"><code class="docutils literal notranslate"><span class="pre">metadata.marker</span></code></a></li>
+<li><a class="reference internal" href="#metadata-tag"><code class="docutils literal notranslate"><span class="pre">metadata.tag</span></code></a></li>
+<li><a class="reference internal" href="#metadata-requires"><code class="docutils literal notranslate"><span class="pre">metadata.requires</span></code></a></li>
+<li><a class="reference internal" href="#metadata-requires-python"><code class="docutils literal notranslate"><span class="pre">metadata.requires-python</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#package-name-version"><code class="docutils literal notranslate"><span class="pre">[[package._name_._version_]]</span></code></a><ul>
+<li><a class="reference internal" href="#package-name-version-url"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.url</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-filename"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.filename</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-direct"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.direct</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-hashes"><code class="docutils literal notranslate"><span class="pre">[package._name_._version_.hashes]</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-requires"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.requires</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-requires-python"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.requires-python</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#expectations-for-lockers">Expectations for Lockers</a></li>
+<li><a class="reference internal" href="#expectations-for-installers">Expectations for Installers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#file-formats-other-than-toml">File Formats Other Than TOML</a></li>
+<li><a class="reference internal" href="#alternative-naming-schemes">Alternative Naming Schemes</a></li>
+<li><a class="reference internal" href="#supporting-a-single-lock-file">Supporting a Single Lock File</a></li>
+<li><a class="reference internal" href="#using-a-flat-list-instead-of-a-dependency-graph">Using a Flat List Instead of a Dependency Graph</a></li>
+<li><a class="reference internal" href="#use-wheel-tags-in-the-file-name">Use Wheel Tags in the File Name</a></li>
+<li><a class="reference internal" href="#alternative-names-for-requires">Alternative Names for <code class="docutils literal notranslate"><span class="pre">requires</span></code></a></li>
+<li><a class="reference internal" href="#accepting-pep-650">Accepting PEP 650</a></li>
+<li><a class="reference internal" href="#specifying-requirements-per-package-instead-of-per-file">Specifying Requirements per Package Instead of per File</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a><ul>
+<li><a class="reference internal" href="#allowing-source-distributions-and-source-trees-to-be-an-opt-in-supported-file-format">Allowing Source Distributions and Source Trees to be an Opt-In, Supported File Format</a></li>
+<li><a class="reference internal" href="#specify-where-lockers-gather-input">Specify Where Lockers Gather Input</a></li>
+<li><a class="reference internal" href="#what-is-a-best-fitting-wheel-file">What is a “best-fitting wheel file”?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgments">Acknowledgments</a></li>
+<li><a class="reference internal" href="#id1">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>This PEP specifies a file format to specify the list of Python package
+installation requirements for an application, and the relation between the
+specified requirements. The list of requirements is considered
+exhaustive for the installation target, and thus not requiring any
+information beyond the platform being installed for, and the file
+itself. The file format is flexible enough to allow installing the
+requirements across different platforms, which guarantees
+reproducibility on multiple platforms from the same file.</p>
+</section>
+<section id="terminology">
+<h2><a class="toc-backref" href="#terminology">Terminology</a></h2>
+<p>There are several terms whose definition must be agreed upon in order
+to facilitate a discussion on the topic of this PEP.</p>
+<p>A <em>package</em> is something you install as a dependency and use via an
+<code class="docutils literal notranslate"><span class="pre">import</span></code> statement. The packages on PyPI are an example of this.</p>
+<p>An <em>application</em> or <em>app</em> is an end product that other bits of code do
+not directly rely on and are not imported. Desktop applications,
+command-line tools, etc. are examples.</p>
+<p>A <em>lock file</em> records the packages that are to be installed for an
+app. Traditionally, the exact version of the package to be installed
+is specified by a lock file, but all specified packages are not always
+installed on a given platform (according a filtering logic described
+in a later section), which enables the lock file to describe
+reproducibility across multiple platforms. Examples of this are
+<code class="docutils literal notranslate"><span class="pre">package-lock.json</span></code> from <a class="reference external" href="https://www.npmjs.com/">npm</a> <a class="footnote-reference brackets" href="#id20" id="id21">7</a>, <code class="docutils literal notranslate"><span class="pre">Poetry.lock</span></code> from Poetry, etc.</p>
+<p><em>Locking</em> is the act of taking the input of the packages an app
+depends on and producting a lock file from that.</p>
+<p>A <em>locker</em> is a tool which produces a lock file.</p>
+<p>An <em>installer</em> consumes a lock file to install what the lock file
+specifies.</p>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#motivation">Motivation</a></h2>
+<p>Applications want reproducible installs for a few reasons (we are not
+worrying about package development in this use case, as you actually
+want your installation requirements to be as <em>flexible</em> as possible in
+that situation).</p>
+<p>One, reproducibility eases development. When you and your fellow
+developers all end up with the same files on a specific platform, you
+make sure you are all developing towards the same experience for the
+application. You also want your users to install the same files as
+you expect to guarantee the experience is the same as you developed
+for them.</p>
+<p>Two, you want to be able to reproduce what gets installed across
+multiple platforms. Thanks to Python’s portability across operating
+systems, CPUs, etc., it is very easy and often desirable to create
+applications that are not restricted to a single platform. Thus, you
+want to be flexible enough to allow for differences in your package
+dependencies between platforms, while still having consistency
+and reproducibility on any one specific platform.</p>
+<p>Three, reproducibility is more secure. When you control exactly what
+files are installed, you can make sure no malicious actor is
+attempting to slip nefarious code into your application (i.e. some
+supply chain attacks). By making a lock file which always leads to
+reproducible installs, we can avoid certain risks entirely.</p>
+<p>This PEP proposes a standard for a lock file, as the current solutions
+don’t meet the outlined goals. Today, the closest we come to a lock
+file standard is the <a class="reference external" href="https://pip.pypa.io/en/latest/reference/requirements-file-format/">requirements file format</a> <a class="footnote-reference brackets" href="#id45" id="id46">15</a> from pip.
+Unfortunately, that format does not lead to inherently reproducible
+installs (it requires optional features both in the requirements file
+and the installer itself, to be discussed later).</p>
+<p>The community itself has also shown a need for lock files based on the
+fact that multiple tools have independently created their own lock
+file formats:</p>
+<ol class="arabic simple">
+<li><a class="reference external" href="https://pypi.org/project/pdm/">PDM</a> <a class="footnote-reference brackets" href="#id23" id="id24">8</a></li>
+<li><a class="reference external" href="https://pypi.org/project/pip-tools/">pip-tools</a> <a class="footnote-reference brackets" href="#id27" id="id28">9</a></li>
+<li><a class="reference external" href="https://pypi.org/project/pipenv/">Pipenv</a> <a class="footnote-reference brackets" href="#id30" id="id31">10</a></li>
+<li><a class="reference external" href="https://pypi.org/project/poetry/">Poetry</a> <a class="footnote-reference brackets" href="#id36" id="id37">12</a></li>
+<li><a class="reference external" href="https://pypi.org/project/pyflow/">Pyflow</a> <a class="footnote-reference brackets" href="#id41" id="id42">13</a></li>
+</ol>
+<p>Unfortunately, those tools all use differing lock file formats. This
+means tooling around these tools much be unique. This impacts tooling
+such as code editors and hosting providers, which want to be as
+flexible as possible when it comes to accepting a user’s application
+code, but also have a limit as to how much development resource they
+can spend to add support for yet another lock file format. A
+standardized format would allow tools to focus their work on a single
+target, and make sure that workflow decisions made by developers
+outside of the lock file format are of no concern to e.g. hosting
+providers.</p>
+<p>Other programming language communities have also shown the usefulness
+of lock files by developing their own solution to this problem. Some
+of those communities include:</p>
+<ol class="arabic simple">
+<li><a class="reference external" href="https://dart.dev/">Dart</a> <a class="footnote-reference brackets" href="#id9" id="id10">3</a></li>
+<li><a class="reference external" href="https://www.npmjs.com/">npm</a> <a class="footnote-reference brackets" href="#id20" id="id22">7</a>/Node</li>
+<li>Go</li>
+<li><a class="reference external" href="https://www.rust-lang.org/">Rust</a> <a class="footnote-reference brackets" href="#id48" id="id49">16</a></li>
+</ol>
+<p>The trend in programming languages in the past decade seems to have
+been toward providing a lock file solution.</p>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<section id="file-format">
+<h3><a class="toc-backref" href="#file-format">File Format</a></h3>
+<p>We wanted the file format to be easy to read as a diff when auditing
+a change to the lock file. As such, and thanks to <a class="reference external" href="../pep-0518">PEP 518</a> and
+<code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, we decided to go with the <a class="reference external" href="https://toml.io">TOML</a> <a class="footnote-reference brackets" href="#id54" id="id55">19</a> file format.</p>
+</section>
+<section id="secure-by-design">
+<h3><a class="toc-backref" href="#secure-by-design">Secure by Design</a></h3>
+<p>Viewing the <a class="reference external" href="https://pip.pypa.io/en/latest/reference/requirements-file-format/">requirements file format</a> <a class="footnote-reference brackets" href="#id45" id="id47">15</a> as the closest we have to
+a lock file standard, there are a few issues with the file format when
+it comes to security. First is that the file format simply does not
+require you specify the exact version of a package. This is why
+tools like <a class="reference external" href="https://pypi.org/project/pip-tools/">pip-tools</a> <a class="footnote-reference brackets" href="#id27" id="id29">9</a> exist to help manage that for the user.</p>
+<p>Second, you must opt into specifying what files may be installed by
+using the <code class="docutils literal notranslate"><span class="pre">--hash</span></code> argument for a specific dependency. This is also
+optional with pip-tools as it requires specifying the
+<code class="docutils literal notranslate"><span class="pre">--generate-hashes</span></code> CLI argument.</p>
+<p>Third, even when you control what files may be installed, it does not
+prevent other packages from being installed. If a dependency is not
+listed in the requirements file, pip will happily go searching for a
+file to meet that need, unless you specify <code class="docutils literal notranslate"><span class="pre">--no-deps</span></code> as an
+argument.</p>
+<p>Fourth, the format allows for installing a
+<a class="reference external" href="https://packaging.python.org/specifications/source-distribution-format/">source distribution file</a> <a class="footnote-reference brackets" href="#id52" id="id53">18</a> (aka “sdist”). By its very nature,
+installing an sdist may imply executing arbitrary Python code, meaning
+that there is no control over what files may be installed. Only by
+specifying <code class="docutils literal notranslate"><span class="pre">--only-binary</span> <span class="pre">:all:</span></code> can you guarantee pip to only use a
+<a class="reference external" href="https://packaging.python.org/specifications/binary-distribution-format/">wheel file</a> <a class="footnote-reference brackets" href="#id59" id="id60">21</a> for each package.</p>
+<p>To recap, in order for a requirements file to be as secure as what is
+being proposed, a user should always do the following steps:</p>
+<ol class="arabic simple">
+<li>Use pip-tools and its command <code class="docutils literal notranslate"><span class="pre">pip-compile</span> <span class="pre">--generate-hashes</span></code></li>
+<li>Install the requirements file using
+<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--no-deps</span> <span class="pre">--only-binary</span> <span class="pre">:all:</span></code></li>
+</ol>
+<p>Critically, all of those flags, and both specificity and exhaustion of
+what to install that pip-tools provides, are optional.</p>
+<p>As such, the proposal raised in this PEP is secure by design to combat
+some supply chain attacks. Hashes for files which would be used to
+install from are <strong>required</strong>. You can <strong>only</strong> install from wheels
+to unambiguously define what files will be placed in the file system.
+Installers <strong>must</strong> have an unambiguous installation from a lock file
+for a given platform.</p>
+</section>
+<section id="cross-platform">
+<h3><a class="toc-backref" href="#cross-platform">Cross-Platform</a></h3>
+<p>Various projects which already have a lock file, like <a class="reference external" href="https://pypi.org/project/pdm/">PDM</a> <a class="footnote-reference brackets" href="#id23" id="id25">8</a> and
+<a class="reference external" href="https://pypi.org/project/poetry/">Poetry</a> <a class="footnote-reference brackets" href="#id36" id="id38">12</a>, provide a lock file which is <em>cross-platform</em>. This allows
+for a single lock file to work on multiple platforms while still
+leading to exact same top-level requirements to be installed
+everywhere while the installation being consistent/unambiguous on
+each platform.</p>
+<p>As to why this is useful, let’s use an example involving <a class="reference external" href="https://pyweek.org/">PyWeek</a> <a class="footnote-reference brackets" href="#id43" id="id44">14</a>
+(a week-long game development competition). We assume you are
+developing on Linux, while someone you choose to partner with is
+using macOS. Now assume the judges are using Windows. How do you make
+sure everyone is using the same top-level dependencies, while allowing
+for any platform-specific requirements (e.g. a package requires a
+helper package under Windows)?</p>
+<p>With a cross-platform lock file, you can make sure that the key
+requirements are met consistently across all platforms. You can then
+also make sure that all users on the same platform get the same
+reproducible installation.</p>
+</section>
+<section id="simple-installer">
+<h3><a class="toc-backref" href="#simple-installer">Simple Installer</a></h3>
+<p>The separation of concerns between a locker and an installer allows
+for an installer to have a much simpler operation to perform. As
+such, it not only allows for installers to be easier to write, but
+facilitates in making sure installers create unambiguous, reproducible
+installations.</p>
+<p>The installer can also expend less computation/energy in creating the
+installation. This is beneficial not only for faster installs, but
+also from an energy consumption perspective, as installers are
+expected to be run more often than lockers.</p>
+<p>This has led to a design where the locker must do more work upfront
+to benefit installers. It also means the complexity of package
+dependencies is simpler and easier to comprehend to avoid ambiguity.</p>
+</section>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification">Specification</a></h2>
+<section id="details">
+<h3><a class="toc-backref" href="#details">Details</a></h3>
+<p>Lock files MUST use the <a class="reference external" href="https://toml.io">TOML</a> <a class="footnote-reference brackets" href="#id54" id="id56">19</a> file format. This not only prevents the
+need to have another file format in the Python packaging ecosystem,
+thanks to its adoption by <a class="reference external" href="../pep-0518">PEP 518</a> for <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, but also
+assists in making lock files more human-readable.</p>
+<p>Lock files MUST end their file names with <code class="docutils literal notranslate"><span class="pre">.pylock.toml</span></code>. The
+<code class="docutils literal notranslate"><span class="pre">.toml</span></code> part unambiguous distinguishes the format of the file, and
+helps tools like code editors support the file appropriately. The
+<code class="docutils literal notranslate"><span class="pre">.pylock</span></code> part distinguishes the file from other TOML files the user
+has, to make logic easier for tools to create functionalities specific
+to Python lock files, instead of TOML files in general.</p>
+<p>The following sections are the top-level keys of the TOML file data format.
+Any field not listed as required is considered optional.</p>
+<section id="version">
+<h4><a class="toc-backref" href="#version"><code class="docutils literal notranslate"><span class="pre">version</span></code></a></h4>
+<p>This field is <strong>required</strong>.</p>
+<p>The version of the lock file being used. The key MUST be a string
+consisting of a number that follows the same formatting as the
+<code class="docutils literal notranslate"><span class="pre">Metadata-Version</span></code> key in the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata spec</a> <a class="footnote-reference brackets" href="#id4" id="id5">2</a>. The value MUST
+be set to <code class="docutils literal notranslate"><span class="pre">&quot;1.0&quot;</span></code> until a future PEP allows for a different value.
+The introduction of a new <em>optional</em> key SHOULD increase the minor
+version. The introduction of a new required key or changing the
+format MUST increase the major version. How to handle other scenarios
+is left as a per-PEP decision.</p>
+<p>Installers MUST warn the user if the lock file specifies a version
+whose major version is support but whose minor version is
+unsupported/unrecognized (e.g. the installer supports <code class="docutils literal notranslate"><span class="pre">&quot;1.0&quot;</span></code>, but
+the lock file specifies <code class="docutils literal notranslate"><span class="pre">&quot;1.1&quot;</span></code>).</p>
+<p>Installers MUST raise an error if the lock file specifies a major
+version which is unsupported (e.g. the installer supports <code class="docutils literal notranslate"><span class="pre">&quot;1.9&quot;</span></code>
+but the lock file specifies <code class="docutils literal notranslate"><span class="pre">&quot;2.0&quot;</span></code>).</p>
+</section>
+<section id="created-at">
+<h4><a class="toc-backref" href="#created-at"><code class="docutils literal notranslate"><span class="pre">created-at</span></code></a></h4>
+<p>This field is <strong>required</strong>.</p>
+<p>The timestamp for when the lock file was generated. It MUST be
+recorded using the UTC time zone. For ease of use with the
+<code class="docutils literal notranslate"><span class="pre">datetime.datetime.fromisoformat()</span></code> method, the format MUST specify
+the timestamp as <code class="docutils literal notranslate"><span class="pre">YYYY-MM-DDTHH:MM[:SS[.ffffff]]+00:00</span></code> (i.e.
+using the <code class="docutils literal notranslate"><span class="pre">T</span></code> separator and <code class="docutils literal notranslate"><span class="pre">+00:00</span></code> to denote UTC; seconds are
+optional).</p>
+</section>
+<section id="tool">
+<h4><a class="toc-backref" href="#tool"><code class="docutils literal notranslate"><span class="pre">[tool]</span></code></a></h4>
+<p>Tools may create their own sub-tables under the <code class="docutils literal notranslate"><span class="pre">tool</span></code> table. The
+rules for this table match those for <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> and its
+<code class="docutils literal notranslate"><span class="pre">[tool]</span></code> table from the <a class="reference external" href="https://packaging.python.org/specifications/declaring-build-dependencies/">build system declaration spec</a> <a class="footnote-reference brackets" href="#id2" id="id3">1</a>.</p>
+</section>
+<section id="metadata">
+<h4><a class="toc-backref" href="#metadata"><code class="docutils literal notranslate"><span class="pre">[metadata]</span></code></a></h4>
+<p>This table is <strong>required</strong>.</p>
+<p>A table containing data applying to the overall lock file.</p>
+<section id="metadata-marker">
+<h5><a class="toc-backref" href="#metadata-marker"><code class="docutils literal notranslate"><span class="pre">metadata.marker</span></code></a></h5>
+<p>A key storing a string containing an environment marker as
+specified in the <a class="reference external" href="https://packaging.python.org/specifications/dependency-specifiers/">dependency specifier spec</a> <a class="footnote-reference brackets" href="#id11" id="id12">4</a>.</p>
+<p>The locker MAY specify an environment marker which specifies any
+restrictions the lock file was generated under.</p>
+<p>If the installer is installing for an environment which does not
+satisfy the specified environment marker, the installer MUST raise an
+error as the lock file does not support the environment.</p>
+</section>
+<section id="metadata-tag">
+<h5><a class="toc-backref" href="#metadata-tag"><code class="docutils literal notranslate"><span class="pre">metadata.tag</span></code></a></h5>
+<p>A key storing a string specifying <a class="reference external" href="https://packaging.python.org/specifications/platform-compatibility-tags/">platform compatibility tags</a> <a class="footnote-reference brackets" href="#id33" id="id34">11</a>
+(i.e. wheel tags). The tag MAY be a compressed tag set.</p>
+<p>The locker MAY specify a tag (set) which specify which platform(s)
+the lock file supports.</p>
+<p>If the installer is installing for an environment which does not
+satisfy the specified tag (set), the installer MUST raise an error
+as the lock file does not support the environment.</p>
+</section>
+<section id="metadata-requires">
+<h5><a class="toc-backref" href="#metadata-requires"><code class="docutils literal notranslate"><span class="pre">metadata.requires</span></code></a></h5>
+<p>This field is <strong>required</strong>.</p>
+<p>An array of strings following the <a class="reference external" href="https://packaging.python.org/specifications/dependency-specifiers/">dependency specifier spec</a> <a class="footnote-reference brackets" href="#id11" id="id13">4</a>. This
+array represents the top-level package dependencies of the lock file
+and thus the root of the dependency graph.</p>
+</section>
+<section id="metadata-requires-python">
+<h5><a class="toc-backref" href="#metadata-requires-python"><code class="docutils literal notranslate"><span class="pre">metadata.requires-python</span></code></a></h5>
+<p>A string specifying the support version(s) of Python for this lock
+file. It follows the same format as that specified for the
+<code class="docutils literal notranslate"><span class="pre">Requires-Python</span></code> field in the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata spec</a> <a class="footnote-reference brackets" href="#id4" id="id6">2</a>.</p>
+</section>
+</section>
+<section id="package-name-version">
+<h4><a class="toc-backref" href="#package-name-version"><code class="docutils literal notranslate"><span class="pre">[[package._name_._version_]]</span></code></a></h4>
+<p>This array is <strong>required</strong>.</p>
+<p>An array per package and version containing details for the potential
+(wheel) files to install (as represented by <code class="docutils literal notranslate"><span class="pre">_name_</span></code> and
+<code class="docutils literal notranslate"><span class="pre">_version_</span></code>, respectively).</p>
+<p>Lockers must MUST normalize a project’s name according to the
+<a class="reference external" href="https://packaging.python.org/specifications/simple-repository-api/">simple repository API</a> <a class="footnote-reference brackets" href="#id50" id="id51">17</a>. If extras are specified as part of the
+project to install, the extras are to be included in the key name and
+are to be sorted in lexicographic order.</p>
+<p>Within the file, the tables for the projects SHOULD be sorted by:</p>
+<ol class="arabic simple">
+<li>Project/key name in lexicographic order</li>
+<li>Package version, newest/highest to older/lowest according to the
+<a class="reference external" href="https://packaging.python.org/specifications/version-specifiers/">version specifiers spec</a> <a class="footnote-reference brackets" href="#id57" id="id58">20</a></li>
+<li>Optional dependencies (extras) via lexicographic order</li>
+<li>File name based on the <code class="docutils literal notranslate"><span class="pre">filename</span></code> or <code class="docutils literal notranslate"><span class="pre">url</span></code> field (discussed
+below)</li>
+</ol>
+<p>All of this is to help minimize diff changes between tool executions.</p>
+<section id="package-name-version-url">
+<h5><a class="toc-backref" href="#package-name-version-url"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.url</span></code></a></h5>
+<p>A string representing a URL where to get the file.</p>
+<p>An installer MAY choose to not use a URL to retrieve a file
+if a file matching the specified hash can be found using some
+alternative means (e.g. on the file system in a cache directory).</p>
+<p>The URL MAY specify a local file by using <code class="docutils literal notranslate"><span class="pre">file:</span></code> URLs.</p>
+</section>
+<section id="package-name-version-filename">
+<h5><a class="toc-backref" href="#package-name-version-filename"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.filename</span></code></a></h5>
+<p>A string representing the file name to be used on behalf of the URL
+specified in <code class="docutils literal notranslate"><span class="pre">url</span></code>.</p>
+<p>This field is provided in case the URL specified in <code class="docutils literal notranslate"><span class="pre">url</span></code> has an
+opaque file name compared to what the actual file name would be for
+installation purposes. If this key is unset then the file name is to
+be taken from <code class="docutils literal notranslate"><span class="pre">url</span></code>.</p>
+<p>Lockers SHOULD provide an accurate value for this field if <code class="docutils literal notranslate"><span class="pre">url</span></code>
+does not. This helps facilitate connecting which file the hashes
+(discussed below) are for.</p>
+</section>
+<section id="package-name-version-direct">
+<h5><a class="toc-backref" href="#package-name-version-direct"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.direct</span></code></a></h5>
+<p>A boolean representing whether an installer should consider the
+project installed “directly” as specified by the
+<a class="reference external" href="https://packaging.python.org/specifications/direct-url/">direct URL origin of installed distributions spec</a> <a class="footnote-reference brackets" href="#id15" id="id16">5</a>.</p>
+<p>If the key is true, then the installer MUST follow the
+<a class="reference external" href="https://packaging.python.org/specifications/direct-url/">direct URL origin of installed distributions spec</a> <a class="footnote-reference brackets" href="#id15" id="id17">5</a> for recording
+the installation as “direct”.</p>
+</section>
+<section id="package-name-version-hashes">
+<h5><a class="toc-backref" href="#package-name-version-hashes"><code class="docutils literal notranslate"><span class="pre">[package._name_._version_.hashes]</span></code></a></h5>
+<p>This table is <strong>required</strong>.</p>
+<p>A table with keys specifying hash algorithms and values as the hash
+for the file represented by this entry in the
+<code class="docutils literal notranslate"><span class="pre">package._name_._version_</span></code> table.</p>
+<p>Lockers SHOULD list hashes in lexicographic order. This is to help
+minimize diff sizes and the potential to overlook hash value changes.</p>
+<p>An installer MUST only install a file which matches one of the
+specified hashes.</p>
+</section>
+<section id="package-name-version-requires">
+<h5><a class="toc-backref" href="#package-name-version-requires"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.requires</span></code></a></h5>
+<p>An array of strings following the <a class="reference external" href="https://packaging.python.org/specifications/dependency-specifiers/">dependency specifier spec</a> <a class="footnote-reference brackets" href="#id11" id="id14">4</a> which
+represent the dependencies of this file.</p>
+</section>
+<section id="package-name-version-requires-python">
+<h5><a class="toc-backref" href="#package-name-version-requires-python"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.requires-python</span></code></a></h5>
+<p>A string specifying the support version(s) of Python for this file. It
+follows the same format as that specified for the
+<code class="docutils literal notranslate"><span class="pre">Requires-Python</span></code> field in the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata spec</a> <a class="footnote-reference brackets" href="#id4" id="id7">2</a>.</p>
+</section>
+</section>
+</section>
+<section id="example">
+<h3><a class="toc-backref" href="#example">Example</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">version</span> <span class="o">=</span> <span class="s2">&quot;1.0&quot;</span>
+<span class="n">created</span><span class="o">-</span><span class="n">at</span> <span class="o">=</span> <span class="mi">2021</span><span class="o">-</span><span class="mi">10</span><span class="o">-</span><span class="mi">19</span><span class="n">T22</span><span class="p">:</span><span class="mi">33</span><span class="p">:</span><span class="mf">45.520739</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+
+<span class="p">[</span><span class="n">tool</span><span class="p">]</span>
+<span class="c1"># Tool-specific table ala PEP 518&#39;s `[tool]` table.</span>
+
+
+<span class="p">[</span><span class="n">metadata</span><span class="p">]</span>
+<span class="n">requires</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;mousebender&quot;</span><span class="p">]</span>
+<span class="n">requires</span><span class="o">-</span><span class="n">python</span> <span class="o">=</span> <span class="s2">&quot;&gt;=3.6&quot;</span>
+
+<span class="p">[[</span><span class="n">package</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="s2">&quot;21.2.0&quot;</span><span class="p">]]</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://files.pythonhosted.org/packages/20/a9/ba6f1cd1a1517ff022b35acd6a7e4246371dfab08b8e42b829b6d07913cc/attrs-21.2.0-py2.py3-none-any.whl&quot;</span>
+<span class="n">hashes</span><span class="o">.</span><span class="n">sha256</span> <span class="o">=</span> <span class="s2">&quot;149e90d6d8ac20db7a955ad60cf0e6881a3f20d37096140088356da6c716b0b1&quot;</span>
+
+<span class="p">[[</span><span class="n">package</span><span class="o">.</span><span class="n">mousebender</span><span class="o">.</span><span class="s2">&quot;2.0.0&quot;</span><span class="p">]]</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://files.pythonhosted.org/packages/f4/b3/f6fdbff6395e9b77b5619160180489410fb2f42f41272994353e7ecf5bdf/mousebender-2.0.0-py3-none-any.whl&quot;</span>
+<span class="n">hashes</span><span class="o">.</span><span class="n">sha256</span> <span class="o">=</span> <span class="s2">&quot;a6f9adfbd17bfb0e6bb5de9a27083e01dfb86ed9c3861e04143d9fd6db373f7c&quot;</span>
+<span class="n">requires</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;attrs&quot;</span><span class="p">,</span> <span class="s2">&quot;packaging&quot;</span><span class="p">]</span>
+
+<span class="p">[[</span><span class="n">package</span><span class="o">.</span><span class="n">packaging</span><span class="o">.</span><span class="s2">&quot;20.9&quot;</span><span class="p">]]</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://files.pythonhosted.org/packages/3e/89/7ea760b4daa42653ece2380531c90f64788d979110a2ab51049d92f408af/packaging-20.9-py2.py3-none-any.whl&quot;</span>
+<span class="n">hashes</span><span class="o">.</span><span class="n">blake</span><span class="o">-</span><span class="mi">256</span> <span class="o">=</span> <span class="s2">&quot;3e897ea760b4daa42653ece2380531c90f64788d979110a2ab51049d92f408af&quot;</span>
+<span class="n">hashes</span><span class="o">.</span><span class="n">sha256</span> <span class="o">=</span> <span class="s2">&quot;67714da7f7bc052e064859c05c595155bd1ee9f69f76557e21f051443c20947a&quot;</span>
+<span class="n">requires</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;pyparsing&quot;</span><span class="p">]</span>
+
+<span class="p">[[</span><span class="n">package</span><span class="o">.</span><span class="n">pyparsing</span><span class="o">.</span><span class="s2">&quot;2.4.7&quot;</span><span class="p">]]</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://files.pythonhosted.org/packages/8a/bb/488841f56197b13700afd5658fc279a2025a39e22449b7cf29864669b15d/pyparsing-2.4.7-py2.py3-none-any.whl&quot;</span>
+<span class="n">hashes</span><span class="o">.</span><span class="n">sha256</span><span class="o">=</span><span class="s2">&quot;ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="expectations-for-lockers">
+<h3><a class="toc-backref" href="#expectations-for-lockers">Expectations for Lockers</a></h3>
+<p>Lockers MUST create lock files for which a topological sort of the
+packages which qualify for installation on the specified platform
+results in a graph for which only a single version of any package
+is possible and there is at least one compatible file to install for
+those packages. This equates to a lock file that which is acceptable
+based on <code class="docutils literal notranslate"><span class="pre">metadata.marker</span></code>, <code class="docutils literal notranslate"><span class="pre">metadata.tag</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">metadata.requires-python</span></code> will have a list of package versions
+after evaluating environment markers and eliminating unsupported
+files for which the only decision the installer will need to make is
+which file to use for the package (which is outlined below).</p>
+<p>This means that lockers are expected to utilize <code class="docutils literal notranslate"><span class="pre">metadata.marker</span></code>,
+<code class="docutils literal notranslate"><span class="pre">metadata.tag</span></code>, and <code class="docutils literal notranslate"><span class="pre">metadata.requires-python</span></code> as appropriate
+as well as environment markers specified via <code class="docutils literal notranslate"><span class="pre">requires</span></code> and Python
+version requirements via <code class="docutils literal notranslate"><span class="pre">requires-python</span></code> to enforce this result
+for installers. Put another way, the information used in the lock
+file is not expected to be pristine/raw from the locker’s input and
+instead is to be changed as necessary to the benefit of the locker’s
+goals.</p>
+</section>
+<section id="expectations-for-installers">
+<h3><a class="toc-backref" href="#expectations-for-installers">Expectations for Installers</a></h3>
+<p>The expected algorithm for resolving what to install is:</p>
+<ol class="arabic simple">
+<li>Construct a dependency graph based on the data in the lock file
+with <code class="docutils literal notranslate"><span class="pre">metadata.requires</span></code> as the starting/root point.</li>
+<li>Eliminate all (wheel) files that are unsupported by the specified
+platform.</li>
+<li>Eliminate all irrelevant edges between packages based on marker
+evaluation.</li>
+<li>Raise an error if a package version is still reachable from the
+root of the dependency graph but lacks any compatible (wheel)
+file.</li>
+<li>Verify that all packages left only have one version to install,
+raising an error otherwise.</li>
+<li>Install the best-fitting wheel file for each package which
+remains.</li>
+</ol>
+<p>What constitues the “best-fitting wheel file” is an open issue.</p>
+</section>
+</section>
+<section id="backwards-compatibility">
+<h2><a class="toc-backref" href="#backwards-compatibility">Backwards Compatibility</a></h2>
+<p>As there is no pre-existing specification regarding lock files, there
+are no explicit backwards compatibility concerns.</p>
+<p>As for pre-existing tools that have their own lock file, some updating
+will be required. Most document the lock file name, but not its
+contents. For projects which do not commit their lock file to
+version control, they will need to update the equivalent of their
+<code class="docutils literal notranslate"><span class="pre">.gitignore</span></code> file. For projects that do commit their lock file to
+version control, what file(s) get committed will need an update.</p>
+<p>For projects which do document their lock file format like <a class="reference external" href="https://pypi.org/project/pipenv/">pipenv</a> <a class="footnote-reference brackets" href="#id30" id="id32">10</a>,
+they will very likely need a major version release which changes the
+lock file format.</p>
+<p>Specifically for <a class="reference external" href="https://pypi.org/project/poetry/">Poetry</a> <a class="footnote-reference brackets" href="#id36" id="id39">12</a>, it has an
+<a class="reference external" href="https://python-poetry.org/docs/cli/#export">export command</a> which
+should allow Poetry to support this lock file format even if the
+project chooses not to adopt this PEP as Poetry’s primary lock file
+format.</p>
+</section>
+<section id="security-implications">
+<h2><a class="toc-backref" href="#security-implications">Security Implications</a></h2>
+<p>A lock file should not introduce security issues but instead help
+solve them. By requiring the recording of hashes for files, a lock
+file is able to help prevent tampering with code since the hash
+details were recorded. A lock file also helps prevent unexpected
+package updates being installed which may be malicious.</p>
+</section>
+<section id="how-to-teach-this">
+<h2><a class="toc-backref" href="#how-to-teach-this">How to Teach This</a></h2>
+<p>Teaching of this PEP will very much be dependent on the lockers and
+installers being used for day-to-day use. Conceptually, though, users
+could be taught that a lock file specifies what should be installed
+for a project to work. The benefits of consistency and security should
+be emphasized to help users realize why they should care about lock
+files.</p>
+</section>
+<section id="reference-implementation">
+<h2><a class="toc-backref" href="#reference-implementation">Reference Implementation</a></h2>
+<p>No proof-of-concept or reference implementation currently exists. An
+example locker and installer will be provided before this PEP is
+fully accepted (although this is not a necessarily a requirement for
+conditional acceptance).</p>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#rejected-ideas">Rejected Ideas</a></h2>
+<section id="file-formats-other-than-toml">
+<h3><a class="toc-backref" href="#file-formats-other-than-toml">File Formats Other Than TOML</a></h3>
+<p><a class="reference external" href="https://www.json.org/">JSON</a> <a class="footnote-reference brackets" href="#id18" id="id19">6</a> was briefly considered, but due to:</p>
+<ol class="arabic simple">
+<li>TOML already being used for <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code></li>
+<li>TOML being more human-readable</li>
+<li>TOML leading to better diffs</li>
+</ol>
+<p>the decision was made to go with TOML. There was some concern over
+Python’s standard library lacking a TOML parser, but most packaging
+tools already use a TOML parser thanks to <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> so this
+issue did not seem to be a showstopper. Some have also argued against
+this concern in the past by the fact that if packaging tools abhor
+installing dependencies and feel they can’t vendor a package then the
+packaging ecosystem has much bigger issues to rectify than needing to
+depend on a third-party TOML parser.</p>
+</section>
+<section id="alternative-naming-schemes">
+<h3><a class="toc-backref" href="#alternative-naming-schemes">Alternative Naming Schemes</a></h3>
+<p>Specifying a directory to install file to was considered, but
+ultimately rejected due to people’s distaste for the idea.</p>
+<p>It was also suggested to not have a special file name suffix, but it
+was decided that hurt discoverability by tools too much.</p>
+</section>
+<section id="supporting-a-single-lock-file">
+<h3><a class="toc-backref" href="#supporting-a-single-lock-file">Supporting a Single Lock File</a></h3>
+<p>At one point the idea of only supporting single lock file which
+contained all possible lock information was considered. But it quickly
+became apparent that trying to devise a data format which could
+encompass both a lock file format which could support multiple
+environments as well as strict lock outcomes for
+reproducible builds would become quite complex and cumbersome.</p>
+<p>The idea of supporting a directory of lock files as well as a single
+lock file named <code class="docutils literal notranslate"><span class="pre">pyproject-lock.toml</span></code> was also considered. But any
+possible simplicity from skipping the directory in the case of a
+single lock file seemed unnecessary. Trying to define appropriate
+logic for what should be the <code class="docutils literal notranslate"><span class="pre">pyproject-lock.toml</span></code> file and what
+should go into <code class="docutils literal notranslate"><span class="pre">pyproject-lock.d</span></code> seemed unnecessarily complicated.</p>
+</section>
+<section id="using-a-flat-list-instead-of-a-dependency-graph">
+<h3><a class="toc-backref" href="#using-a-flat-list-instead-of-a-dependency-graph">Using a Flat List Instead of a Dependency Graph</a></h3>
+<p>The first version of this PEP proposed that the lock file have no
+concept of a dependency graph. Instead, the lock file would list
+exactly what should be installed for a specific platform such that
+installers did not have to make any decisions about <em>what</em> to install,
+only validating that the lock file would work for the target platform.</p>
+<p>This idea was eventually rejected due to the number of combinations
+of potential <a class="reference external" href="../pep-0508">PEP 508</a> environment markers. The decision was made that
+trying to have lockers generate all possible combinations as
+individual lock files when a project wants to be cross-platform would
+be too much.</p>
+</section>
+<section id="use-wheel-tags-in-the-file-name">
+<h3><a class="toc-backref" href="#use-wheel-tags-in-the-file-name">Use Wheel Tags in the File Name</a></h3>
+<p>Instead of having the <code class="docutils literal notranslate"><span class="pre">metadata.tag</span></code> field there was a suggestion
+of encoding the tags into the file name. But due to the addition of
+the <code class="docutils literal notranslate"><span class="pre">metadata.marker</span></code> field and what to do when no tags were needed,
+the idea was dropped.</p>
+</section>
+<section id="alternative-names-for-requires">
+<h3><a class="toc-backref" href="#alternative-names-for-requires">Alternative Names for <code class="docutils literal notranslate"><span class="pre">requires</span></code></a></h3>
+<p>Some other names for what became <code class="docutils literal notranslate"><span class="pre">requires</span></code> were <code class="docutils literal notranslate"><span class="pre">installs</span></code>,
+<code class="docutils literal notranslate"><span class="pre">needs</span></code>, and <code class="docutils literal notranslate"><span class="pre">dependencies</span></code>. Initially this PEP chose <code class="docutils literal notranslate"><span class="pre">needs</span></code>
+after asking a Python beginner which term they preferred. But based
+on feedback on an earlier draft of this PEP, <code class="docutils literal notranslate"><span class="pre">requires</span></code> was chosen
+as the term.</p>
+</section>
+<section id="accepting-pep-650">
+<h3><a class="toc-backref" href="#accepting-pep-650">Accepting PEP 650</a></h3>
+<p><a class="reference external" href="../pep-0650">PEP 650</a> was an earlier attempt at trying to tackle this problem by
+specifying an API for installers instead of standardizing on a lock file
+format (ala <a class="reference external" href="../pep-0517">PEP 517</a>). The
+<a class="reference external" href="https://discuss.python.org/t/pep-650-specifying-installer-requirements-for-python-projects/6657/">initial response</a>
+to <a class="reference external" href="../pep-0650">PEP 650</a> could be considered mild/lukewarm. People seemed to be
+consistently confused over which tools should provide what functionality
+to implement the PEP. It also potentially incurred more overhead as
+it would require executing Python APIs to perform any actions involving
+packaging.</p>
+<p>This PEP chooses to standardize around an artifact instead of an API
+(ala <a class="reference external" href="../pep-0621">PEP 621</a>). This would allow for more tool integrations as it
+removes the need to specifically use Python to do things such as
+create a lock file, update it, or even install packages listed in
+a lock file. It also allows for easier introspection by forcing
+dependency graph details to be written in a human-readable format.
+It also allows for easier sharing of knowledge by standardizing what
+people need to know more (e.g. tutorials become more portable between
+tools when it comes to understanding the artifact they produce). It’s
+also simply the approach other language communities have taken and seem
+to be happy with.</p>
+</section>
+<section id="specifying-requirements-per-package-instead-of-per-file">
+<h3><a class="toc-backref" href="#specifying-requirements-per-package-instead-of-per-file">Specifying Requirements per Package Instead of per File</a></h3>
+<p>An earlier draft of this PEP specified dependencies at the package
+level instead of per (wheel) file. While this has traditionally been
+how packaging systems work, it actually did not reflect accurately
+how things are specified. As such, this PEP was subsequently updated
+to reflect the granularity that dependencies can truly be specified
+at.</p>
+</section>
+</section>
+<section id="open-issues">
+<h2><a class="toc-backref" href="#open-issues">Open Issues</a></h2>
+<section id="allowing-source-distributions-and-source-trees-to-be-an-opt-in-supported-file-format">
+<h3><a class="toc-backref" href="#allowing-source-distributions-and-source-trees-to-be-an-opt-in-supported-file-format">Allowing Source Distributions and Source Trees to be an Opt-In, Supported File Format</a></h3>
+<p>For security reproducibility reasons this PEP only considers
+supporting installation from wheel files. Installing from either an
+sdist or source tree requires arbitrary code execution during
+installation, unknown files to be installed, and an unknown set of
+dependencies. Those issues all run counter to guaranteeing users get
+the same files for the same platform as well as making sure they are
+receiving the expected files.</p>
+<p>To deal with this issue, people would need to build their own wheels
+from sdists and cache them. Then the lockers would record the hashes
+of those wheels and the installers would then be expected to use
+those wheels.</p>
+<p>Another option is to allow sdists (and potentially source trees) be
+listed as support file formats, but have them marked as insecure in
+the lock file and require the installer force the user to opt into
+using insecure file formats. Unfortunately because sdists which don’t
+necessarily follow version 2.2 of the <a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">core metadata spec</a> <a class="footnote-reference brackets" href="#id4" id="id8">2</a> for their
+<code class="docutils literal notranslate"><span class="pre">PKG-INFO</span></code> file will have unknown dependencies, breaking the
+guarantee that results will be reproducible thanks to potential
+arbitrary calculations of those dependencies. And even if an sdist did
+follow the latest spec, they could still list their requirements as
+dynamic, still making it impossible to statically know what should be
+installed. As such, installers would either have to have a full
+resolver to handle these dynamic cases or only sdists which follow
+version 2.2 of the core metadata spec <strong>and</strong> statically specify
+their dependencies could be listed. But at that point the project is
+probably capable of providing wheels, making support for sdists that
+much less important/useful.</p>
+</section>
+<section id="specify-where-lockers-gather-input">
+<h3><a class="toc-backref" href="#specify-where-lockers-gather-input">Specify Where Lockers Gather Input</a></h3>
+<p>This PEP currently does not specify how a locker gets its input. It
+could be possible to support a subset of <a class="reference external" href="../pep-0621">PEP 621</a> such that
+<code class="docutils literal notranslate"><span class="pre">project.requires-python</span></code> and <code class="docutils literal notranslate"><span class="pre">project.dependencies</span></code> are read
+from <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> and automatically used as input if provided.
+But this or some other practice could also be left as something to
+grow organically in the community and making that the standard at a
+later date.</p>
+</section>
+<section id="what-is-a-best-fitting-wheel-file">
+<h3><a class="toc-backref" href="#what-is-a-best-fitting-wheel-file">What is a “best-fitting wheel file”?</a></h3>
+<p>The expected steps of installing a package much include decided which
+wheel file to install as a package may have a universal wheel on top
+of very specific wheels. But as <a class="reference external" href="https://packaging.python.org/specifications/platform-compatibility-tags/">platform compatibility tags</a> <a class="footnote-reference brackets" href="#id33" id="id35">11</a> do not
+specify how to determine priority and there is no way to use
+environment markers to specify an exact wheel, there’s no defined way
+for an installer to deterministically determine what wheel file to
+select.</p>
+<p>There are two possible solutions. One is for the locker to specify a
+ranking/priority order to the wheel files. That way the installer
+simply sorts to the supported wheel files by that order and installs
+the the top rated/ranked wheel file. This puts the priority order
+under the control of the locker.</p>
+<p>The other option is to specify in this PEP how to calculate the
+priority/ranking of wheel files. This is currently tool-based and
+seems to have been acceptable overall by the community, but having a
+specification for this would probably still be welcome. It may be
+somewhat disruptive, though, as it could change what files get
+installed by tools which implement the ordering outside of the
+context of this PEP. And if this PEP gains traction, it is reasonable
+to assume that users will expect the ordering to be consistent across
+tools.</p>
+</section>
+</section>
+<section id="acknowledgments">
+<h2><a class="toc-backref" href="#acknowledgments">Acknowledgments</a></h2>
+<p>Thanks to Frost Ming of <a class="reference external" href="https://pypi.org/project/pdm/">PDM</a> <a class="footnote-reference brackets" href="#id23" id="id26">8</a> and Sébastien Eustace of <a class="reference external" href="https://pypi.org/project/poetry/">Poetry</a> <a class="footnote-reference brackets" href="#id36" id="id40">12</a> for
+providing input around dynamic install-time resolution of <a class="reference external" href="../pep-0508">PEP 508</a>
+requirements.</p>
+<p>Thanks to Kushal Das for making sure reproducible builds stayed a
+concern for this PEP.</p>
+<p>Thanks to Andrea McInnes for initially settling the bikeshedding and
+choosing the paint colour of <code class="docutils literal notranslate"><span class="pre">needs</span></code> (at which point that caused
+people to rally around the <code class="docutils literal notranslate"><span class="pre">requires</span></code> colour).</p>
+</section>
+<section id="id1">
+<h2><a class="toc-backref" href="#id1">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id2"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/declaring-build-dependencies/">https://packaging.python.org/specifications/declaring-build-dependencies/</a></dd>
+<dt class="label" id="id4"><span class="brackets">2</span><span class='fn-backref''><em> (<a href='#id5'>1</a>, <a href='#id6'>2</a>, <a href='#id7'>3</a>, <a href='#id8'>4</a>) </em></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/core-metadata/">https://packaging.python.org/specifications/core-metadata/</a></dd>
+<dt class="label" id="id9"><span class="brackets"><a class="fn-backref" href="#id10">3</a></span></dt>
+<dd><a class="reference external" href="https://dart.dev/">https://dart.dev/</a></dd>
+<dt class="label" id="id11"><span class="brackets">4</span><span class='fn-backref''><em> (<a href='#id12'>1</a>, <a href='#id13'>2</a>, <a href='#id14'>3</a>) </em></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/dependency-specifiers/">https://packaging.python.org/specifications/dependency-specifiers/</a></dd>
+<dt class="label" id="id15"><span class="brackets">5</span><span class='fn-backref''><em> (<a href='#id16'>1</a>, <a href='#id17'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/direct-url/">https://packaging.python.org/specifications/direct-url/</a></dd>
+<dt class="label" id="id18"><span class="brackets"><a class="fn-backref" href="#id19">6</a></span></dt>
+<dd><a class="reference external" href="https://www.json.org/">https://www.json.org/</a></dd>
+<dt class="label" id="id20"><span class="brackets">7</span><span class='fn-backref''><em> (<a href='#id21'>1</a>, <a href='#id22'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://www.npmjs.com/">https://www.npmjs.com/</a></dd>
+<dt class="label" id="id23"><span class="brackets">8</span><span class='fn-backref''><em> (<a href='#id24'>1</a>, <a href='#id25'>2</a>, <a href='#id26'>3</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/pdm/">https://pypi.org/project/pdm/</a></dd>
+<dt class="label" id="id27"><span class="brackets">9</span><span class='fn-backref''><em> (<a href='#id28'>1</a>, <a href='#id29'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/pip-tools/">https://pypi.org/project/pip-tools/</a></dd>
+<dt class="label" id="id30"><span class="brackets">10</span><span class='fn-backref''><em> (<a href='#id31'>1</a>, <a href='#id32'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/pipenv/">https://pypi.org/project/pipenv/</a></dd>
+<dt class="label" id="id33"><span class="brackets">11</span><span class='fn-backref''><em> (<a href='#id34'>1</a>, <a href='#id35'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/platform-compatibility-tags/">https://packaging.python.org/specifications/platform-compatibility-tags/</a></dd>
+<dt class="label" id="id36"><span class="brackets">12</span><span class='fn-backref''><em> (<a href='#id37'>1</a>, <a href='#id38'>2</a>, <a href='#id39'>3</a>, <a href='#id40'>4</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/poetry/">https://pypi.org/project/poetry/</a></dd>
+<dt class="label" id="id41"><span class="brackets"><a class="fn-backref" href="#id42">13</a></span></dt>
+<dd><a class="reference external" href="https://pypi.org/project/pyflow/">https://pypi.org/project/pyflow/</a></dd>
+<dt class="label" id="id43"><span class="brackets"><a class="fn-backref" href="#id44">14</a></span></dt>
+<dd><a class="reference external" href="https://pyweek.org/">https://pyweek.org/</a></dd>
+<dt class="label" id="id45"><span class="brackets">15</span><span class='fn-backref''><em> (<a href='#id46'>1</a>, <a href='#id47'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://pip.pypa.io/en/latest/reference/requirements-file-format/">https://pip.pypa.io/en/latest/reference/requirements-file-format/</a></dd>
+<dt class="label" id="id48"><span class="brackets"><a class="fn-backref" href="#id49">16</a></span></dt>
+<dd><a class="reference external" href="https://www.rust-lang.org/">https://www.rust-lang.org/</a></dd>
+<dt class="label" id="id50"><span class="brackets"><a class="fn-backref" href="#id51">17</a></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/simple-repository-api/">https://packaging.python.org/specifications/simple-repository-api/</a></dd>
+<dt class="label" id="id52"><span class="brackets"><a class="fn-backref" href="#id53">18</a></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/source-distribution-format/">https://packaging.python.org/specifications/source-distribution-format/</a></dd>
+<dt class="label" id="id54"><span class="brackets">19</span><span class='fn-backref''><em> (<a href='#id55'>1</a>, <a href='#id56'>2</a>) </em></span></dt>
+<dd><a class="reference external" href="https://toml.io">https://toml.io</a></dd>
+<dt class="label" id="id57"><span class="brackets"><a class="fn-backref" href="#id58">20</a></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/version-specifiers/">https://packaging.python.org/specifications/version-specifiers/</a></dd>
+<dt class="label" id="id59"><span class="brackets"><a class="fn-backref" href="#id60">21</a></span></dt>
+<dd><a class="reference external" href="https://packaging.python.org/specifications/binary-distribution-format/">https://packaging.python.org/specifications/binary-distribution-format/</a></dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0665.rst">https://github.com/python/peps/blob/master/pep-0665.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0665.rst">2021-11-03 19:30:54 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 665 – A file format to list Python dependencies for reproducibility of an application</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#terminology">Terminology</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a><ul>
+<li><a class="reference internal" href="#file-format">File Format</a></li>
+<li><a class="reference internal" href="#secure-by-design">Secure by Design</a></li>
+<li><a class="reference internal" href="#cross-platform">Cross-Platform</a></li>
+<li><a class="reference internal" href="#simple-installer">Simple Installer</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#details">Details</a><ul>
+<li><a class="reference internal" href="#version"><code class="docutils literal notranslate"><span class="pre">version</span></code></a></li>
+<li><a class="reference internal" href="#created-at"><code class="docutils literal notranslate"><span class="pre">created-at</span></code></a></li>
+<li><a class="reference internal" href="#tool"><code class="docutils literal notranslate"><span class="pre">[tool]</span></code></a></li>
+<li><a class="reference internal" href="#metadata"><code class="docutils literal notranslate"><span class="pre">[metadata]</span></code></a><ul>
+<li><a class="reference internal" href="#metadata-marker"><code class="docutils literal notranslate"><span class="pre">metadata.marker</span></code></a></li>
+<li><a class="reference internal" href="#metadata-tag"><code class="docutils literal notranslate"><span class="pre">metadata.tag</span></code></a></li>
+<li><a class="reference internal" href="#metadata-requires"><code class="docutils literal notranslate"><span class="pre">metadata.requires</span></code></a></li>
+<li><a class="reference internal" href="#metadata-requires-python"><code class="docutils literal notranslate"><span class="pre">metadata.requires-python</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#package-name-version"><code class="docutils literal notranslate"><span class="pre">[[package._name_._version_]]</span></code></a><ul>
+<li><a class="reference internal" href="#package-name-version-url"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.url</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-filename"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.filename</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-direct"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.direct</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-hashes"><code class="docutils literal notranslate"><span class="pre">[package._name_._version_.hashes]</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-requires"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.requires</span></code></a></li>
+<li><a class="reference internal" href="#package-name-version-requires-python"><code class="docutils literal notranslate"><span class="pre">package._name_._version_.requires-python</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#expectations-for-lockers">Expectations for Lockers</a></li>
+<li><a class="reference internal" href="#expectations-for-installers">Expectations for Installers</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a><ul>
+<li><a class="reference internal" href="#file-formats-other-than-toml">File Formats Other Than TOML</a></li>
+<li><a class="reference internal" href="#alternative-naming-schemes">Alternative Naming Schemes</a></li>
+<li><a class="reference internal" href="#supporting-a-single-lock-file">Supporting a Single Lock File</a></li>
+<li><a class="reference internal" href="#using-a-flat-list-instead-of-a-dependency-graph">Using a Flat List Instead of a Dependency Graph</a></li>
+<li><a class="reference internal" href="#use-wheel-tags-in-the-file-name">Use Wheel Tags in the File Name</a></li>
+<li><a class="reference internal" href="#alternative-names-for-requires">Alternative Names for <code class="docutils literal notranslate"><span class="pre">requires</span></code></a></li>
+<li><a class="reference internal" href="#accepting-pep-650">Accepting PEP 650</a></li>
+<li><a class="reference internal" href="#specifying-requirements-per-package-instead-of-per-file">Specifying Requirements per Package Instead of per File</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a><ul>
+<li><a class="reference internal" href="#allowing-source-distributions-and-source-trees-to-be-an-opt-in-supported-file-format">Allowing Source Distributions and Source Trees to be an Opt-In, Supported File Format</a></li>
+<li><a class="reference internal" href="#specify-where-lockers-gather-input">Specify Where Lockers Gather Input</a></li>
+<li><a class="reference internal" href="#what-is-a-best-fitting-wheel-file">What is a “best-fitting wheel file”?</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#acknowledgments">Acknowledgments</a></li>
+<li><a class="reference internal" href="#id1">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0665.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

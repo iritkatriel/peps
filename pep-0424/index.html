@@ -1,0 +1,146 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 424 – A method for exposing a length hint | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 424 – A method for exposing a length hint</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 424 – A method for exposing a length hint</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">424</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">A method for exposing a length hint</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Alex Gaynor &lt;alex.gaynor&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">14-Jul-2012</dd>
+<dt class="field-odd">Python-Version</dt>
+<dd class="field-odd">3.4</dd>
+<dt class="field-even">Post-History</dt>
+<dd class="field-even"><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2012-July/120920.html">https://mail.python.org/pipermail/python-dev/2012-July/120920.html</a></dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>CPython currently defines a <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code> method on several
+types, such as various iterators.  This method is then used by various
+other functions (such as <code class="docutils literal notranslate"><span class="pre">list</span></code>) to presize lists based on the
+estimate returned by <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code>.  Types which are not sized,
+and thus should not define <code class="docutils literal notranslate"><span class="pre">__len__</span></code>, can then define
+<code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code>, to allow estimating or computing a size (such as
+many iterators).</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification">Specification</a></h2>
+<p>This PEP formally documents <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code> for other interpreters
+and non-standard-library Python modules to implement.</p>
+<p><code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code> must return an integer (else a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> is
+raised) or <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code>, and is not required to be accurate.  It
+may return a value that is either larger or smaller than the actual
+size of the container.  A return value of <code class="docutils literal notranslate"><span class="pre">NotImplemented</span></code> indicates
+that there is no finite length estimate.  It may not return a negative
+value (else a ValueError is raised).</p>
+<p>In addition, a new function <code class="docutils literal notranslate"><span class="pre">operator.length_hint</span></code> hint is added,
+with the following semantics (which define how <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code>
+should be used):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">length_hint</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return an estimate of the number of items in obj.</span>
+
+<span class="sd">    This is useful for presizing containers when building from an</span>
+<span class="sd">    iterable.</span>
+
+<span class="sd">    If the object supports len(), the result will be</span>
+<span class="sd">    exact. Otherwise, it may over- or under-estimate by an</span>
+<span class="sd">    arbitrary amount. The result will be an integer &gt;= 0.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">get_hint</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="fm">__length_hint__</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">hint</span> <span class="o">=</span> <span class="n">get_hint</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+        <span class="k">if</span> <span class="n">hint</span> <span class="ow">is</span> <span class="bp">NotImplemented</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">default</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hint</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Length hint must be an integer, not </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span>
+                            <span class="nb">type</span><span class="p">(</span><span class="n">hint</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">hint</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;__length_hint__() should return &gt;= 0&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">hint</span>
+</pre></div>
+</div>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale">Rationale</a></h2>
+<p>Being able to pre-allocate lists based on the expected size, as
+estimated by <code class="docutils literal notranslate"><span class="pre">__length_hint__</span></code>, can be a significant optimization.
+CPython has been observed to run some code faster than PyPy, purely
+because of this optimization being present.</p>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed into the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0424.txt">https://github.com/python/peps/blob/master/pep-0424.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0424.txt">2021-02-09 16:54:26 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 424 – A method for exposing a length hint</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#specification">Specification</a></li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0424.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

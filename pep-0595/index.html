@@ -1,0 +1,526 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 595 – Improving bugs.python.org | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 595 – Improving bugs.python.org</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 595 – Improving bugs.python.org</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">595</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Improving bugs.python.org</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Ezio Melotti &lt;ezio.melotti&#32;&#97;t&#32;gmail.com&gt;, Berker Peksag &lt;berker.peksag&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">BDFL-Delegate</dt>
+<dd class="field-even">Barry Warsaw &lt;barry&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-odd">Status</dt>
+<dd class="field-odd">Withdrawn</dd>
+<dt class="field-even">Type</dt>
+<dd class="field-even">Informational</dd>
+<dt class="field-odd">Created</dt>
+<dd class="field-odd">12-May-2019</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#resolution">Resolution</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#roundup-advantages-over-github-issues">Roundup advantages over GitHub Issues</a></li>
+<li><a class="reference internal" href="#improving-roundup">Improving Roundup</a></li>
+<li><a class="reference internal" href="#pep-581-issues">PEP 581 issues</a></li>
+<li><a class="reference internal" href="#migration-considerations">Migration considerations</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>This PEP proposes a list of improvements to make bugs.python.org
+more usable for contributors and core developers.  This PEP also
+discusses why remaining on Roundup should be preferred over
+switching to GitHub Issues, as proposed by <span class="target" id="index-0"></span><a class="pep reference external" href="../pep-0581"><strong>PEP 581</strong></a>.</p>
+</section>
+<section id="resolution">
+<h2><a class="toc-backref" href="#resolution">Resolution</a></h2>
+<p>2020-06-25: With the acceptance of <a class="reference external" href="../pep-0581">PEP 581</a>, the move to GitHub for
+issues is proceeding, this PEP is being marked as a withdrawn
+informational PEP.</p>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#motivation">Motivation</a></h2>
+<p>On May 14th, 2019 <span class="target" id="index-1"></span><a class="pep reference external" href="../pep-0581"><strong>PEP 581</strong></a> has been accepted <a class="footnote-reference brackets" href="#id25" id="id1">1</a> without much
+public discussion and without a clear consensus <a class="footnote-reference brackets" href="#id26" id="id2">2</a>.  The PEP
+contains factual errors and doesn’t address some of the
+issues that the migration to GitHub Issues might present.</p>
+<p>Given the scope of the migration, the amount of work required,
+and how it will negatively affect the workflow during the
+transition phase, this decision should be re-evaluated.</p>
+</section>
+<section id="roundup-advantages-over-github-issues">
+<h2><a class="toc-backref" href="#roundup-advantages-over-github-issues">Roundup advantages over GitHub Issues</a></h2>
+<p>This section discusses reasons why Roundup should be preferred
+over GitHub Issues and Roundup features that are not available
+on GitHub Issues.</p>
+<ul>
+<li><strong>Roundup is the status quo.</strong>  Roundup has been an integral
+part of the CPython workflow for years.  It is a stable product
+that has been tested and customized to adapt to our needs as the
+workflow evolved.<p>It is possible to gradually improve it and avoid the disruption
+that a switch to a different system would inevitably bring to
+the workflow.</p>
+</li>
+<li><strong>Open-source and Python powered.</strong>  Roundup is an open-source
+project and is written in Python.  By using it and supporting
+it, we also support the Python ecosystem.  Several features
+developed for bpo have also been ported to upstream Roundup
+over the years.</li>
+<li><strong>Fully customizable.</strong>  Roundup can be (and has been) fully
+customized to fit our needs.</li>
+<li><strong>Finer-grained access control.</strong>  Roundup allows the creation
+of different roles with different permissions (e.g. create,
+view, edit, etc.) for each individual property, and users can
+have multiple roles.</li>
+<li><strong>Flexible UI.</strong>  While Roundup UI might look dated, it is
+convenient and flexible.<p>For example, on the issue page, each field (e.g. title, type,
+versions, status, linked files and PRs, etc.) have appropriate
+UI elements (input boxes, dropdowns, tables, etc.) that are
+easy to set and also provide a convenient way to get info about
+the issue at a glance.  The number of fields, their values, and
+the UI element they use is also fully customizable.
+GitHub only provides labels.</p>
+<p>The issue list page presents the issues in a compact and easy
+to read table with separate columns for different fields.  For
+comparison, Roundup lists 50 issues in a screen, whereas GitHub
+takes two screens to shows 25 issues.</p>
+</li>
+<li><strong>Advanced search.</strong>  Roundup provides an accurate way to search
+and filter by using any combination of issue fields.
+It is also possible to customize the number of results and the
+fields displayed in the table, and the sorting and grouping
+(up to two levels).<p>bpo also provides predefined summaries (e.g. “Created by you”,
+“Assigned to you”, etc.) and allows the creation of custom
+search queries that can be conveniently accessed from the sidebar.</p>
+</li>
+<li><strong>Nosy list autocomplete.</strong>  The nosy list has an autocomplete
+feature that suggests maintainers and experts.  The suggestions
+are automatically updated when the experts index <a class="footnote-reference brackets" href="#id27" id="id3">3</a> changes.</li>
+<li><strong>Dependencies and Superseders.</strong> Roundup allows to specify
+dependencies that must be addressed before the current issues
+can be closed and a superseder issue to easily mark duplicates
+<a class="footnote-reference brackets" href="#id28" id="id4">4</a>.  The list of dependencies can also be used to create
+meta-issues that references several other sub-issues <a class="footnote-reference brackets" href="#id29" id="id5">5</a>.</li>
+</ul>
+</section>
+<section id="improving-roundup">
+<h2><a class="toc-backref" href="#improving-roundup">Improving Roundup</a></h2>
+<p>This section lists some of the issues mentioned by <span class="target" id="index-2"></span><a class="pep reference external" href="../pep-0581"><strong>PEP 581</strong></a>
+and other desired features and discusses how they can be implemented
+by improving Roundup and/or our instance.</p>
+<ul>
+<li><strong>REST API support.</strong>  A REST API will make integration with other
+services and the development of new tools and applications easiers.<p>Upstream Roundup now supports a REST API. Updating the tracker will
+make the REST API available.</p>
+</li>
+<li><strong>GitHub login support.</strong>  This will allow users to login
+to bugs.python.org (bpo) without having to create a new account.
+It will also solve issues with confirmation emails being marked
+as spam, and provide two-factor authentication.<p>A patch to add this functionality is already available and is
+being integrated at the time of writing <a class="footnote-reference brackets" href="#id30" id="id6">6</a>.</p>
+</li>
+<li><strong>Markdown support and message preview and editing.</strong>  This feature
+will allow the use of Markdown in messages and the ability to
+preview the message before the submission and edit it afterward.<p>This can be done, but it will take some work.  Possible solutions
+have been proposed on the roundup-devel mailing list <a class="footnote-reference brackets" href="#id31" id="id7">7</a>.</p>
+</li>
+<li><strong>“Remove me from nosy list” button.</strong>  Add a button on issue pages
+to remove self from the nosy list.<p>This feature will be added during GSoC 2019.</p>
+</li>
+<li><strong>Mobile friendly theme.</strong>  Current theme of bugs.python.org looks
+dated and it doesn’t work well with mobile browsers.<p>A mobile-friendly theme that is more modern but still familiar
+will be added.</p>
+</li>
+<li><strong>Move reply box close to the last message.</strong>  The reply box is
+located at the top of the page, whereas the last message is at the
+bottom.<p>The reply box can be moved or duplicated after the last message.</p>
+</li>
+<li><strong>Real-time updates.</strong>  When another users submits changes to an
+issue, they should show up in real time.<p>This can be accomplished by using the REST API.</p>
+</li>
+<li><strong>Add PR link to BPO emails.</strong>  Currently bpo emails don’t include
+links to the corresponding PRs.<p>A patch <a class="footnote-reference brackets" href="#id32" id="id8">8</a> is available to change the content of the bpo emails
+from:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">components</span><span class="p">:</span> <span class="o">+</span><span class="n">Tkinter</span>
+<span class="n">versions</span><span class="p">:</span> <span class="o">+</span><span class="n">Python</span> <span class="mf">3.4</span>
+<span class="n">pull_requests</span><span class="p">:</span> <span class="o">+</span><span class="mi">42</span>
+</pre></div>
+</div>
+<p>to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">components</span><span class="p">:</span> <span class="o">+</span><span class="n">Tkinter</span>
+<span class="n">versions</span><span class="p">:</span> <span class="o">+</span><span class="n">Python</span> <span class="mf">3.4</span>
+<span class="n">pull_request</span><span class="p">:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">python</span><span class="o">/</span><span class="n">cpython</span><span class="o">/</span><span class="n">pull</span><span class="o">/</span><span class="mi">341</span>
+</pre></div>
+</div>
+</li>
+<li><strong>Python 3 support.</strong>  Using Python 3 will make maintenance easier.<p>Upstream Roundup now supports Python 3. Updating the tracker will
+allow us to switch to Python 3.  The instances will need to be
+updated as well.</p>
+</li>
+<li><strong>Use upstream Roundup.</strong>  We currently use a fork of Roundup with
+a few modifications, most notably the GitHub integration.  If this
+is ported upstream, we can start using upstream Roundup without
+having to maintain our fork.</li>
+</ul>
+</section>
+<section id="pep-581-issues">
+<h2><a class="toc-backref" href="#pep-581-issues">PEP 581 issues</a></h2>
+<p>This section addresses some errors and inaccuracies found in <span class="target" id="index-3"></span><a class="pep reference external" href="../pep-0581"><strong>PEP 581</strong></a>.</p>
+<p>The “Why GitHub?” section of <a class="reference external" href="../pep-0581">PEP 581</a> lists features currently
+available on GitHub Issues but not on Roundup.  Some of this features
+are currently supported:</p>
+<ul>
+<li>“Ability to reply to issue and pull request conversations via email.”<ul class="simple">
+<li>Being able to reply by email has been one of the core features of
+Roundup since the beginning.  It is also possible to create new
+issues or close existing ones, set or modify fields, and add
+attachments.</li>
+</ul>
+</li>
+<li>“Email notifications containing metadata, integrated with Gmail,
+allowing systematic filtering of emails.”<ul class="simple">
+<li>Emails sent by Roundup contains metadata that can be used for
+filtering.</li>
+</ul>
+</li>
+<li>“Additional privacy, such as offering the user a choice to hide an
+email address, while still allowing communication with the user
+through &#64;-mentions.”<ul class="simple">
+<li>Email addresses are hidden by default to users that are not
+registered.  Registered users can see other users’ addresses
+because we configured the tracker to show them.  It can easily
+be changed if desired.  Users can still be added to the nosy
+list by using their username even if their address is hidden.</li>
+</ul>
+</li>
+<li>“Ability to automatically close issues when a PR has been merged.”<ul class="simple">
+<li>The GitHub integration of Roundup automatically closes issues
+when a commit that contains “fixes issue &lt;id&gt;” is merged.
+(Alternative spellings such as “closes” or “bug” are also supported.)
+See <a class="footnote-reference brackets" href="#id33" id="id9">9</a> for a recent example of this feature.</li>
+</ul>
+</li>
+<li>“Support for permalinks, allowing easy quoting and copying &amp;
+pasting of source code.”<ul class="simple">
+<li>Roundup has permalinks for issues, messages, attachments, etc.
+In addition, Roundup allows to easily rewrite broken URLs in
+messages (e.g. if the code hosting changes).</li>
+</ul>
+</li>
+<li>“Core developers, volunteers, and the PSF don’t have to maintain the
+issue infrastructure/site, giving us more time and resources to focus
+on the development of Python.”<ul>
+<li>While this is partially true, additional resources are required to
+write and maintain bots.<p>In some cases, bots are required to workaround GitHub’s lack of
+features rather than expanding. <a class="footnote-reference brackets" href="#id34" id="id10">10</a> was written
+specifically to workaround GitHub’s email integration.</p>
+<p>Updating our bots to stay up-to-date with changes in the GitHub API
+has also maintenance cost. <a class="footnote-reference brackets" href="#id35" id="id11">11</a> took two days to be fixed.</p>
+<p>In addition, we will still need to maintain Roundup for bpo (even
+if it becomes read-only) and for the other trackers
+we currently host/maintain (Jython <a class="footnote-reference brackets" href="#id36" id="id12">12</a> and Roundup <a class="footnote-reference brackets" href="#id37" id="id13">13</a>).</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>The “Issues with Roundup / bpo” section of <span class="target" id="index-4"></span><a class="pep reference external" href="../pep-0581"><strong>PEP 581</strong></a> lists some issues
+that have already been fixed:</p>
+<ul>
+<li>“The upstream Roundup code is in Mercurial. Without any CI available,
+it puts heavy burden on the few existing maintainers in terms of
+reviewing, testing, and applying patches.”<ul class="simple">
+<li>While Roundup uses Mercurial by default, there is a git clone
+available on GitHub <a class="footnote-reference brackets" href="#id38" id="id14">14</a>.  Roundup also has CI available <a class="footnote-reference brackets" href="#id39" id="id15">15</a> <a class="footnote-reference brackets" href="#id40" id="id16">16</a>.</li>
+</ul>
+</li>
+<li>“There is no REST API available. There is an open issue in Roundup for
+adding REST API. Last activity was in 2016.”<ul class="simple">
+<li>The REST API has been integrated and it’s now available in Roundup.</li>
+</ul>
+</li>
+<li>“Users email addresses are exposed. There is no option to mask it.”<ul>
+<li>Exposing addresses to registered and logged in users was a decision
+taken when our instance was set up.<p>This has now been changed to make the email addresses hidden for
+regular users too (Developers and Coordinators can still see them).
+The “Email address” column from the user listing page <a class="footnote-reference brackets" href="#id41" id="id17">17</a> has been
+removed too.</p>
+</li>
+</ul>
+</li>
+<li>“It sends a number of unnecessary emails and notifications, and it is
+difficult, if not impossible, to configure.”<ul class="simple">
+<li>This can be configured.</li>
+</ul>
+</li>
+<li>“Creating an account has been a hassle. There have been reports of people
+having trouble creating accounts or logging in.”<ul class="simple">
+<li>The main issue is confirmation emails being marked as spam.  Work has
+been done to resolve the issue.</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="migration-considerations">
+<h2><a class="toc-backref" href="#migration-considerations">Migration considerations</a></h2>
+<p>This section describes issues with the migrations that might not
+have been addressed by <span class="target" id="index-5"></span><a class="pep reference external" href="../pep-0581"><strong>PEP 581</strong></a> and <span class="target" id="index-6"></span><a class="pep reference external" href="../pep-0588"><strong>PEP 588</strong></a>.</p>
+<p><span class="target" id="index-7"></span><a class="pep reference external" href="../pep-0588"><strong>PEP 588</strong></a> suggests to add a button to migrate issues to GitHub
+only when someone wants to keep working on them.  This approach
+has several issues, but there are also other issues that will
+need to be addressed regardless of the approach used:</p>
+<ul>
+<li><strong>Vendor lock-in.</strong>  GitHub is proprietary and there is risk
+of vendor lock-in.  Their business model might change and they
+could shut down altogether.  For example, several projects
+decided to move away from GitHub after Microsoft acquisition.<p>If/when the repository is no longer available on GitHub, we will
+be forced to migrate again and all the links to the issues won’t
+work anymore.</p>
+</li>
+<li><strong>Required bpo updates.</strong>  bpo will need to be updated in order
+to add a button that, once pressed, creates a new issue on
+GitHub, copies over all the messages, attachments, and
+creates/adds labels for the existing fields.  Permissions will
+also need to be tweaked to make individual issues read-only
+once they are migrated, and to prevent users to create new
+accounts.  It might be necessary to set up redirects (see below).</li>
+<li><strong>Two trackers.</strong>  If issues are migrated on demand, the issues
+will be split between two trackers.  Referencing and searching
+issues will take significant more effort.</li>
+<li><strong>Lossy conversion.</strong>  GitHub only mechanism to add custom metadata
+is through labels.  bpo uses a number of fields to specify several
+different metadata.  Preserving all fields and values will result
+in too many labels.  If only some fields and values are preserved
+the others will be lost (unless there is a way to preserve them
+elsewhere).</li>
+<li><strong>Issue IDs preservation.</strong>  GitHub doesn’t provide a way to
+set and preserve the ID of migrated issues. Some projects managed
+to preserve the IDs by contacting the GitHub staff and migrating
+the issues <em>en masse</em>.  However, this is no longer possible, since
+PRs and issues share the same namespace and PRs already use
+existing bpo issue IDs.</li>
+<li><strong>Internal issue links preservation.</strong>  Existing issues might
+contain references to other issues in messages and fields (e.g.
+dependencies or superseder).  Since the issue ID will change
+during the migration, these will need to be updated.  If the
+issues are migrated on demand, all the existing internal
+references to the migrated issues (on both bpo and GitHub issues)
+will have to be updated.<p>Setting up a redirect for each migrated issue on bpo might
+mitigate the issue, however – if references in migrated messages
+are not updated – it will cause confusion (e.g. if bpo issue
+<code class="docutils literal notranslate"><span class="pre">#1234</span></code> becomes GitHub issue <code class="docutils literal notranslate"><span class="pre">#4321</span></code>, a reference to <code class="docutils literal notranslate"><span class="pre">#1234</span></code>
+in a migrated message could link to bpo <code class="docutils literal notranslate"><span class="pre">#1234</span></code> and bpo can
+redirect to GitHub issue <code class="docutils literal notranslate"><span class="pre">#4321</span></code>, but new references to <code class="docutils literal notranslate"><span class="pre">#1234</span></code>
+will link to GitHub PR <code class="docutils literal notranslate"><span class="pre">#1234</span></code> rather than GitHub issue <code class="docutils literal notranslate"><span class="pre">#4321</span></code>).
+Manually having to specify a <code class="docutils literal notranslate"><span class="pre">bpo-</span></code> or <code class="docutils literal notranslate"><span class="pre">gh-</span></code> prefix is error prone.</p>
+</li>
+<li><strong>External issue links preservation.</strong>  A number of websites,
+mails, etc. link to bpo issues.  If bpo is shut down, these links
+will break.  If we don’t want to break the links, we will have to
+keep bpo alive and set up a redirect system that links to the
+corresponding GitHub issue.<p>In addition, if GitHub shuts down, we won’t have any way to setup
+redirects and preserve external links to GitHub issues.</p>
+</li>
+<li><strong>References preservation and updating.</strong>  In addition to issue
+references, bpo converts a number of other references into links,
+including message and PR IDs, changeset numbers, legacy SVN
+revision numbers, paths to files in the repo, files in tracebacks
+(detecting the correct branch), and links to devguide pages and
+sections <a class="footnote-reference brackets" href="#id42" id="id18">18</a>.<p>Since Roundup converts references to links when messages are
+requested, it is possible to update the target and generate the
+correct link.  This need already arose several times, for
+example: files and HG changesets moved from <code class="docutils literal notranslate"><span class="pre">hg.python.org</span></code> to
+GitHub and the devguide moved from <code class="docutils literal notranslate"><span class="pre">docs.python.org/devguide</span></code> to
+<code class="docutils literal notranslate"><span class="pre">devguide.python.org</span></code>.</p>
+<p>Since messages on GitHub are static, the links will need to be
+generated and hardcoded during the migration or they will be lost.
+In order to update them, a tool to find all references and
+regenerate the links will need to be written.</p>
+</li>
+<li><strong>Roundup and bpo maintenance.</strong>  On top of the aforementioned
+changes to bpo and development of tools required to migrate to
+GitHub issues, we will still need to keep running and maintaining
+Roundup, both for our bpo instance (read-only) and for the Jython
+and Roundup trackers (read-write).<p>Even if eventually we migrate all bpo issues to GitHub and we stop
+maintaining Jython and Roundup, bpo will need to be maintained
+and redirect to the corresponding GitHub issues.</p>
+</li>
+<li><strong>Bots maintenance.</strong>  Since it’s not possible to customize GitHub
+directly, it’s also necessary to write, maintain, and host bots.
+Even if eventually we stop maintaining Roundup, the maintenance
+burden simply shifted from Roundup to the bots.  Hosting each
+different bot also has a monetary cost.</li>
+<li><strong>Using issue templates.</strong>  Manually editing issue templates to
+“remove texts that don’t apply to [the] issue” is cumbersome and
+error-prone.</li>
+<li><strong>Signal to noise ratio.</strong>  Switching to GitHub Issues will
+likely increase the number of invalid reports and increase
+the triaging effort.  This concern has been raised in the past
+in a Zulip topic <a class="footnote-reference brackets" href="#id43" id="id19">19</a>.<p>There have been already cases where people posted comments on
+PRs that required moderators to mark them as off-topic or
+disruptive, delete them altogether, and even lock the
+conversation <a class="footnote-reference brackets" href="#id44" id="id20">20</a>.</p>
+</li>
+<li><strong>Weekly tracker reports and stats.</strong>  Roundup sends weekly reports
+to python-dev with a summary that includes new issues, recent
+issues with no replies, recent issues waiting for review, most
+discussed issues, closed issues, and deltas for open/closed/total
+issue counts <a class="footnote-reference brackets" href="#id45" id="id21">21</a>.  The report provides an easy way to keep track
+of the tracker activity and to make sure that issues that require
+attention are noticed.<p>The data collect by the weekly report is also use to generate
+statistics and graphs that can be used to gain new insights <a class="footnote-reference brackets" href="#id46" id="id22">22</a>.</p>
+</li>
+<li><strong>bpo-related MLs.</strong>  There are currently two mailing lists where
+bpo posts new tracker issues and all messages respectively:
+<code class="docutils literal notranslate"><span class="pre">new-bugs-announce</span></code> <a class="footnote-reference brackets" href="#id47" id="id23">23</a> and <code class="docutils literal notranslate"><span class="pre">python-bugs-list</span></code> <a class="footnote-reference brackets" href="#id48" id="id24">24</a>.  A new system
+will need to be developed to preserve this functionality.  These MLs
+offer additional ways to keep track of the tracker activity.</li>
+</ul>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id25"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd>[Python-Dev] <a class="reference external" href="../pep-0581">PEP 581</a> (Using GitHub issues for CPython) is accepted<p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-May/157399.html">https://mail.python.org/pipermail/python-dev/2019-May/157399.html</a></p>
+</dd>
+<dt class="label" id="id26"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd>[python-committers] [Python-Dev] <a class="reference external" href="../pep-0581">PEP 581</a> (Using GitHub issues
+for CPython) is accepted<p><a class="reference external" href="https://mail.python.org/pipermail/python-committers/2019-May/006755.html">https://mail.python.org/pipermail/python-committers/2019-May/006755.html</a></p>
+</dd>
+<dt class="label" id="id27"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
+<dd>Experts Index – Python Devguide<p><a class="reference external" href="https://devguide.python.org/experts/">https://devguide.python.org/experts/</a></p>
+</dd>
+<dt class="label" id="id28"><span class="brackets"><a class="fn-backref" href="#id4">4</a></span></dt>
+<dd>An example of superseded issues:
+“re.sub() replaces only several matches”<p><a class="reference external" href="https://bugs.python.org/issue12078">https://bugs.python.org/issue12078</a></p>
+</dd>
+<dt class="label" id="id29"><span class="brackets"><a class="fn-backref" href="#id5">5</a></span></dt>
+<dd>An example of meta issue using dependencies to track sub-issues:
+“Meta-issue: support of the android platform””<p><a class="reference external" href="https://bugs.python.org/issue26865">https://bugs.python.org/issue26865</a></p>
+</dd>
+<dt class="label" id="id30"><span class="brackets"><a class="fn-backref" href="#id6">6</a></span></dt>
+<dd>Support logging in with GitHub<p><a class="reference external" href="https://github.com/python/bugs.python.org/issues/7">https://github.com/python/bugs.python.org/issues/7</a></p>
+</dd>
+<dt class="label" id="id31"><span class="brackets"><a class="fn-backref" href="#id7">7</a></span></dt>
+<dd>Re: [Roundup-devel] <a class="reference external" href="../pep-0581">PEP 581</a> and Google Summer of Code<p><a class="reference external" href="https://sourceforge.net/p/roundup/mailman/message/36667828/">https://sourceforge.net/p/roundup/mailman/message/36667828/</a></p>
+</dd>
+<dt class="label" id="id32"><span class="brackets"><a class="fn-backref" href="#id8">8</a></span></dt>
+<dd><dl class="simple">
+<dt>[Tracker-discuss] [issue624] bpo emails contain useless non-github</dt><dd>pull_request number - users want a link to actual github PR</dd>
+</dl>
+<p><a class="reference external" href="https://mail.python.org/pipermail/tracker-discuss/2018-June/004547.html">https://mail.python.org/pipermail/tracker-discuss/2018-June/004547.html</a></p>
+</dd>
+<dt class="label" id="id33"><span class="brackets"><a class="fn-backref" href="#id9">9</a></span></dt>
+<dd>The commit reported in msg342882 closes the issue (see the history below)<p><a class="reference external" href="https://bugs.python.org/issue36951#msg342882">https://bugs.python.org/issue36951#msg342882</a></p>
+</dd>
+<dt class="label" id="id34"><span class="brackets"><a class="fn-backref" href="#id10">10</a></span></dt>
+<dd>The cpython-emailer-webhook project<p><a class="reference external" href="https://github.com/berkerpeksag/cpython-emailer-webhook">https://github.com/berkerpeksag/cpython-emailer-webhook</a></p>
+</dd>
+<dt class="label" id="id35"><span class="brackets"><a class="fn-backref" href="#id11">11</a></span></dt>
+<dd>A recent incident caused by GitHub<p><a class="reference external" href="https://github.com/python/bedevere/pull/163">https://github.com/python/bedevere/pull/163</a></p>
+</dd>
+<dt class="label" id="id36"><span class="brackets"><a class="fn-backref" href="#id12">12</a></span></dt>
+<dd>Jython issue tracker<p><a class="reference external" href="https://bugs.jython.org/">https://bugs.jython.org/</a></p>
+</dd>
+<dt class="label" id="id37"><span class="brackets"><a class="fn-backref" href="#id13">13</a></span></dt>
+<dd>Roundup issue tracker<p><a class="reference external" href="https://issues.roundup-tracker.org/">https://issues.roundup-tracker.org/</a></p>
+</dd>
+<dt class="label" id="id38"><span class="brackets"><a class="fn-backref" href="#id14">14</a></span></dt>
+<dd>GitHub clone of Roundup<p><a class="reference external" href="https://github.com/roundup-tracker/roundup">https://github.com/roundup-tracker/roundup</a></p>
+</dd>
+<dt class="label" id="id39"><span class="brackets"><a class="fn-backref" href="#id15">15</a></span></dt>
+<dd>Travis-CI for Roundup<p><a class="reference external" href="https://travis-ci.org/roundup-tracker/roundup">https://travis-ci.org/roundup-tracker/roundup</a>) and codecov</p>
+</dd>
+<dt class="label" id="id40"><span class="brackets"><a class="fn-backref" href="#id16">16</a></span></dt>
+<dd>Codecov for Roundup<p><a class="reference external" href="https://codecov.io/gh/roundup-tracker/roundup/commits">https://codecov.io/gh/roundup-tracker/roundup/commits</a></p>
+</dd>
+<dt class="label" id="id41"><span class="brackets"><a class="fn-backref" href="#id17">17</a></span></dt>
+<dd>User listing – Python tracker<p><a class="reference external" href="https://bugs.python.org/user?&#64;sort=username">https://bugs.python.org/user?&#64;sort=username</a></p>
+</dd>
+<dt class="label" id="id42"><span class="brackets"><a class="fn-backref" href="#id18">18</a></span></dt>
+<dd>Generating Special Links in a Comment – Python Devguide<p><a class="reference external" href="https://devguide.python.org/triaging/#generating-special-links-in-a-comment">https://devguide.python.org/triaging/#generating-special-links-in-a-comment</a></p>
+</dd>
+<dt class="label" id="id43"><span class="brackets"><a class="fn-backref" href="#id19">19</a></span></dt>
+<dd>The New-bugs-announce mailing list<p><a class="reference external" href="https://mail.python.org/mailman/listinfo/new-bugs-announce">https://mail.python.org/mailman/listinfo/new-bugs-announce</a></p>
+</dd>
+<dt class="label" id="id44"><span class="brackets"><a class="fn-backref" href="#id20">20</a></span></dt>
+<dd>The Python-bugs-list mailing list<p><a class="reference external" href="https://mail.python.org/mailman/listinfo/python-bugs-list">https://mail.python.org/mailman/listinfo/python-bugs-list</a></p>
+</dd>
+<dt class="label" id="id45"><span class="brackets"><a class="fn-backref" href="#id21">21</a></span></dt>
+<dd>An example of [Python-Dev] Summary of Python tracker Issues<p><a class="reference external" href="https://mail.python.org/pipermail/python-dev/2019-May/157483.html">https://mail.python.org/pipermail/python-dev/2019-May/157483.html</a></p>
+</dd>
+<dt class="label" id="id46"><span class="brackets"><a class="fn-backref" href="#id22">22</a></span></dt>
+<dd>Issues stats – Python tracker<p><a class="reference external" href="https://bugs.python.org/issue?&#64;template=stats">https://bugs.python.org/issue?&#64;template=stats</a></p>
+</dd>
+<dt class="label" id="id47"><span class="brackets"><a class="fn-backref" href="#id23">23</a></span></dt>
+<dd>s/n ratio – Python – Zulip<p><a class="reference external" href="https://python.zulipchat.com/#narrow/stream/130206-pep581/topic/s.2Fn.20ratio">https://python.zulipchat.com/#narrow/stream/130206-pep581/topic/s.2Fn.20ratio</a></p>
+</dd>
+<dt class="label" id="id48"><span class="brackets"><a class="fn-backref" href="#id24">24</a></span></dt>
+<dd>For example, this and other related PRs:<p><a class="reference external" href="https://github.com/python/cpython/pull/9099">https://github.com/python/cpython/pull/9099</a></p>
+</dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-0595.rst">https://github.com/python/peps/blob/master/pep-0595.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-0595.rst">2021-02-03 14:06:23 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 595 – Improving bugs.python.org</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#resolution">Resolution</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#roundup-advantages-over-github-issues">Roundup advantages over GitHub Issues</a></li>
+<li><a class="reference internal" href="#improving-roundup">Improving Roundup</a></li>
+<li><a class="reference internal" href="#pep-581-issues">PEP 581 issues</a></li>
+<li><a class="reference internal" href="#migration-considerations">Migration considerations</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-0595.rst">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>

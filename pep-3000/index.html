@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PEP 3000 – Python 3000 | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png"/>
+    <link rel="stylesheet" href="../_static/style.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)"/>
+</head>
+<body>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 3000 – Python 3000</li>
+            </ul>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 3000 – Python 3000</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">PEP</dt>
+<dd class="field-odd">3000</dd>
+<dt class="field-even">Title</dt>
+<dd class="field-even">Python 3000</dd>
+<dt class="field-odd">Author</dt>
+<dd class="field-odd">Guido van Rossum &lt;guido&#32;&#97;t&#32;python.org&gt;</dd>
+<dt class="field-even">Status</dt>
+<dd class="field-even">Final</dd>
+<dt class="field-odd">Type</dt>
+<dd class="field-odd">Process</dd>
+<dt class="field-even">Created</dt>
+<dd class="field-even">05-Apr-2006</dd>
+<dt class="field-odd">Post-History</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<h2>Contents</h2>
+<ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#naming">Naming</a></li>
+<li><a class="reference internal" href="#pep-numbering">PEP Numbering</a></li>
+<li><a class="reference internal" href="#timeline">Timeline</a></li>
+<li><a class="reference internal" href="#compatibility-and-transition">Compatibility and Transition</a></li>
+<li><a class="reference internal" href="#implementation-language">Implementation Language</a></li>
+<li><a class="reference internal" href="#meta-contributions">Meta-Contributions</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract">Abstract</a></h2>
+<p>This PEP sets guidelines for Python 3000 development.  Ideally, we
+first agree on the process, and start discussing features only after
+the process has been decided and specified.  In practice, we’ll be
+discussing features and process simultaneously; often the debate about
+a particular feature will prompt a process discussion.</p>
+</section>
+<section id="naming">
+<h2><a class="toc-backref" href="#naming">Naming</a></h2>
+<p>Python 3000, Python 3.0 and Py3K are all names for the same thing.
+The project is called Python 3000, or abbreviated to Py3k.  The actual
+Python release will be referred to as Python 3.0, and that’s
+what “python3.0 -V” will print; the actual file names will use the
+same naming convention we use for Python 2.x.  I don’t want to pick a
+new name for the executable or change the suffix for Python source
+files.</p>
+</section>
+<section id="pep-numbering">
+<h2><a class="toc-backref" href="#pep-numbering">PEP Numbering</a></h2>
+<p>Python 3000 PEPs are numbered starting at <a class="reference external" href="../pep-3000">PEP 3000</a>.  PEPs 3000-3099
+are meta-PEPs – these can be either process or informational PEPs.
+PEPs 3100-3999 are feature PEPs.  <a class="reference external" href="../pep-3000">PEP 3000</a> itself (this PEP) is
+special; it is the meta-PEP for Python 3000 meta-PEPs (IOW it describe
+the process to define processes).  <a class="reference external" href="../pep-3100">PEP 3100</a> is also special; it’s a
+laundry list of features that were selected for (hopeful) inclusion in
+Python 3000 before we started the Python 3000 process for real.  <a class="reference external" href="../pep-3099">PEP
+3099</a>, finally, is a list of features that will <em>not</em> change.</p>
+</section>
+<section id="timeline">
+<h2><a class="toc-backref" href="#timeline">Timeline</a></h2>
+<p>See <a class="reference external" href="../pep-0361">PEP 361</a> <a class="footnote-reference brackets" href="#pep361" id="id1">3</a>, which contains the release schedule for Python
+2.6 and 3.0.  These versions will be released in lockstep.</p>
+<p>Note: standard library development is expected to ramp up after 3.0a1
+is released.</p>
+<p>I expect that there will be parallel Python 2.x and 3.x releases for
+some time; the Python 2.x releases will continue for a longer time
+than the traditional 2.x.y bugfix releases.  Typically, we stop
+releasing bugfix versions for 2.x once version 2.(x+1) has been
+released.  But I expect there to be at least one or two new 2.x
+releases even after 3.0 (final) has been released, probably well into
+3.1 or 3.2.  This will to some extent depend on community demand for
+continued 2.x support, acceptance and stability of 3.0, and volunteer
+stamina.</p>
+<p>I expect that Python 3.1 and 3.2 will be released much sooner after
+3.0 than has been customary for the 2.x series.  The 3.x release
+pattern will stabilize once the community is happy with 3.x.</p>
+</section>
+<section id="compatibility-and-transition">
+<h2><a class="toc-backref" href="#compatibility-and-transition">Compatibility and Transition</a></h2>
+<p>Python 3.0 will break backwards compatibility with Python 2.x.</p>
+<p><strong>There is no requirement that Python 2.6 code will run unmodified on
+Python 3.0.</strong> Not even a subset.  (Of course there will be a <em>tiny</em>
+subset, but it will be missing major functionality.)</p>
+<p>Python 2.6 will support forward compatibility in the following two
+ways:</p>
+<ul class="simple">
+<li>It will support a “Py3k warnings mode” which will warn dynamically
+(i.e. at runtime) about features that will stop working in Python
+3.0, e.g. assuming that range() returns a list.</li>
+<li>It will contain backported versions of many Py3k features, either
+enabled through __future__ statements or simply by allowing old and
+new syntax to be used side-by-side (if the new syntax would be a
+syntax error in 2.x).</li>
+</ul>
+<p>Instead, and complementary to the forward compatibility features in
+2.6, there will be a separate source code conversion tool <a class="footnote-reference brackets" href="#id4" id="id2">1</a>.  This
+tool can do a context-free source-to-source translation.  For example,
+it can translate <code class="docutils literal notranslate"><span class="pre">apply(f,</span> <span class="pre">args)</span></code> into <code class="docutils literal notranslate"><span class="pre">f(*args)</span></code>.  However, the
+tool cannot do data flow analysis or type inferencing, so it simply
+assumes that <code class="docutils literal notranslate"><span class="pre">apply</span></code> in this example refers to the old built-in
+function.</p>
+<p>The recommended development model for a project that needs to support
+Python 2.6 and 3.0 simultaneously is as follows:</p>
+<ol class="arabic simple" start="0">
+<li>You should have excellent unit tests with close to full coverage.</li>
+<li>Port your project to Python 2.6.</li>
+<li>Turn on the Py3k warnings mode.</li>
+<li>Test and edit until no warnings remain.</li>
+<li>Use the 2to3 tool to convert this source code to 3.0 syntax.
+<strong>Do not manually edit the output!</strong></li>
+<li>Test the converted source code under 3.0.</li>
+<li>If problems are found, make corrections to the <strong>2.6</strong> version
+of the source code and go back to step 3.</li>
+<li>When it’s time to release, release separate 2.6 and 3.0 tarballs
+(or whatever archive form you use for releases).</li>
+</ol>
+<p>It is recommended not to edit the 3.0 source code until you are ready
+to reduce 2.6 support to pure maintenance (i.e. the moment when you
+would normally move the 2.6 code to a maintenance branch anyway).</p>
+<p>PS. We need a meta-PEP to describe the transitional issues in detail.</p>
+</section>
+<section id="implementation-language">
+<h2><a class="toc-backref" href="#implementation-language">Implementation Language</a></h2>
+<p>Python 3000 will be implemented in C, and the implementation will be
+derived as an evolution of the Python 2 code base. This reflects my
+views (which I share with Joel Spolsky <a class="footnote-reference brackets" href="#id5" id="id3">2</a>) on the dangers of complete
+rewrites. Since Python 3000 as a language is a relatively mild
+improvement on Python 2, we can gain a lot by not attempting to
+reimplement the language from scratch. I am not against parallel
+from-scratch implementation efforts, but my own efforts will be
+directed at the language and implementation that I know best.</p>
+</section>
+<section id="meta-contributions">
+<h2><a class="toc-backref" href="#meta-contributions">Meta-Contributions</a></h2>
+<p>Suggestions for additional text for this PEP are gracefully accepted
+by the author.  Draft meta-PEPs for the topics above and additional
+topics are even more welcome!</p>
+</section>
+<section id="references">
+<h2><a class="toc-backref" href="#references">References</a></h2>
+<dl class="footnote brackets">
+<dt class="label" id="id4"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd>The 2to3 tool, in the subversion sandbox
+<a class="reference external" href="http://svn.python.org/view/sandbox/trunk/2to3/">http://svn.python.org/view/sandbox/trunk/2to3/</a></dd>
+<dt class="label" id="id5"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
+<dd>Joel on Software: Things You Should Never Do, Part I
+<a class="reference external" href="http://www.joelonsoftware.com/articles/fog0000000069.html">http://www.joelonsoftware.com/articles/fog0000000069.html</a></dd>
+<dt class="label" id="pep361"><span class="brackets"><a class="fn-backref" href="#id1">3</a></span></dt>
+<dd><a class="reference external" href="../pep-0361">PEP 361</a> (Python 2.6 and 3.0 Release Schedule)
+<a class="reference external" href="http://www.python.org/dev/peps/pep-0361">http://www.python.org/dev/peps/pep-0361</a></dd>
+</dl>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright">Copyright</a></h2>
+<p>This document has been placed in the public domain.</p>
+</section>
+</section>
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/master/pep-3000.txt">https://github.com/python/peps/blob/master/pep-3000.txt</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/master/pep-3000.txt">2017-11-11 19:28:55 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#">PEP 3000 – Python 3000</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#naming">Naming</a></li>
+<li><a class="reference internal" href="#pep-numbering">PEP Numbering</a></li>
+<li><a class="reference internal" href="#timeline">Timeline</a></li>
+<li><a class="reference internal" href="#compatibility-and-transition">Compatibility and Transition</a></li>
+<li><a class="reference internal" href="#implementation-language">Implementation Language</a></li>
+<li><a class="reference internal" href="#meta-contributions">Meta-Contributions</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</li>
+</ul>
+
+            <br />
+            <strong><a href="https://github.com/python/peps/blob/master/pep-3000.txt">Page Source (GitHub)</a></strong>
+        </nav>
+    </section>
+    <script src="../_static/doctools.js"></script>
+</body>
+</html>
