@@ -28,6 +28,7 @@ Author: Erlend Egeberg Aasland <erlend@python.org>,
         William Woodruff <william@yossarian.net>,
         David Woods <dw-git@d-woods.co.uk>,
         Jelle Zijlstra <jelle.zijlstra@gmail.com>,
+Discussions-To: https://discuss.python.org/t/pep-733-an-evaluation-of-python-s-public-c-api/37618/1
 Status: Draft
 Type: Informational
 Content-Type: text/x-rst
